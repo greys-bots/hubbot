@@ -28,5 +28,6 @@ module.exports = {
 		if(!res2) return msg.channel.createMessage('Something went wrong while deleting server.');
 
 		msg.channel.createMessage('Server deleted!');
-	}
+	},
+	alias: ['delist']
 }

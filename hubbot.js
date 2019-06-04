@@ -10,7 +10,7 @@ bot.db		= dblite('data.sqlite',"-header");
 
 bot.utils = require('./utilities')
 
-bot.prefix		= "hut!";
+bot.prefix		= "hub!";
 
 bot.commands	= {};
 
