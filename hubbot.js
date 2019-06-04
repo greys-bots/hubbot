@@ -1,29 +1,23 @@
 const Eris 		= require("eris-additions")(require("eris"));
-const mysql 	= require("mysql");
+const dblite 	= require("dblite");
 const fs 		= require("fs");
 
 require('dotenv').config();
 
 const bot 	= new Eris(process.env.TOKEN, {restMode: true});
 
-bot.db		= mysql.createConnection({host: process.env.DB_HOST,
-										user: process.env.DB_USER,
-										password: process.env.DB_PASS,
-										database: process.env.DB_NAME,
-										supportBigNumbers: true,
-                            			bigNumberStrings: true
-									});
+bot.db		= dblite('data.sqlite',"-header");
 
 bot.utils = require('./utilities')
 
-bot.prefix		= "hub!";
+bot.prefix		= "hut!";
 
 bot.commands	= {};
 
 async function setup() {
 	bot.db.query(`CREATE TABLE IF NOT EXISTS servers(
-		id         	SERIAL PRIMARY KEY,
-        server_id   BIGINT UNIQUE NOT NULL,
+		id         	INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id   BIGINT,
         contact_id  TEXT,
         name        TEXT,
         description TEXT,
@@ -32,16 +26,15 @@ async function setup() {
 	)`);
 
 	bot.db.query(`CREATE TABLE IF NOT EXISTS posts (
-        id          SERIAL PRIMARY KEY,
-        server_id   BIGINT NOT NULL,
-        channel_id  BIGINT NOT NULL,
-        message_id  BIGINT NOT NULL,
-        FOREIGN KEY (server_id) REFERENCES servers (id) ON DELETE CASCADE
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id   BIGINT,
+        channel_id  BIGINT,
+        message_id  BIGINT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS configs (
-        id          	SERIAL PRIMARY KEY,
-        server_id   	BIGINT NOT NULL,
+    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id   	BIGINT,
         banlog_channel	BIGINT,
         reprole 		BIGINT
     )`);
@@ -182,17 +175,3 @@ bot.on("messageReactionAdd",async (msg, emoji, user)=>{
 
 setup();
 bot.connect();
-
-process.on('SIGINT',()=>{
-	bot.db.end(()=>{
-		console.log("connection severed");
-		process.exit();
-	})
-})
-
-process.on('SIGTERM',()=>{
-	bot.db.end(()=>{
-		console.log("connection severed");
-		process.exit();
-	})
-})

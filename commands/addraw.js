@@ -5,12 +5,12 @@ module.exports = {
 
 		var exists = await bot.utils.getServer(bot, args[0]);
 		if(exists) return msg.channel.createMessage('Server already exists!');
-		bot.db.query(`INSERT INTO servers SET ?`,{
-			server_id: 	args[0],
-			name: 		args.slice(1).join(" "),
-			invite: 	"",
-			pic_url: 	""
-		});
+		bot.db.query(`INSERT INTO servers (server_id, name) VALUES (?,?)`,[
+			args[0],
+			args.slice(1).join(" "),
+			"",
+			""
+		]);
 
 		msg.channel.createMessage(`Server added! ID: ${args[0]}`);
 	}

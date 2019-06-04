@@ -13,12 +13,12 @@ module.exports = {
 			var exists = await bot.utils.getServer(bot, invite.guild.id);
 			console.log(exists);
 			if(exists) return msg.channel.createMessage("Server already exists!");
-			bot.db.query(`INSERT INTO servers SET ?`,{
-				server_id: 	invite.guild.id,
-				name: 		invite.guild.name, 
-				invite: 	"https://discord.gg/"+invite.code,
-				pic_url: 	`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`
-			});
+			bot.db.query(`INSERT INTO servers (server_id, name, invite, pic_url) VALUES (?,?,?,?)`,[
+				invite.guild.id,
+				invite.guild.name, 
+				"https://discord.gg/"+invite.code,
+				`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`
+			]);
 			msg.channel.createMessage(`Server added! ID: ${invite.guild.id}`);
 
 		}).catch(e=>{

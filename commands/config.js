@@ -53,10 +53,10 @@ module.exports.subcommands.banlog = {
 				}
 			})
 		} else {
-			bot.db.query(`INSERT INTO configs SET ?`,{
-				server_id: 			msg.guild.id,
-				banlog_channel: 	chan.id
-			},(err,rows)=>{
+			bot.db.query(`INSERT INTO configs (server_id, banlog_channel) VALUES (?,?)`,[
+					msg.guild.id,
+					chan.id
+			],(err,rows)=>{
 				if(err) {
 					console.log(err);
 					msg.channel.createMessage('Something went wrong.')
@@ -89,10 +89,10 @@ module.exports.subcommands.reprole = {
 				}
 			})
 		} else {
-			bot.db.query(`INSERT INTO configs SET ?`,{
-				server_id: 			msg.guild.id,
-				reprole: 			role.id
-			},(err,rows)=>{
+			bot.db.query(`INSERT INTO configs (server_id, reprole) VALUES (?,?)`,[
+				msg.guild.id,
+				role.id
+			],(err,rows)=>{
 				if(err) {
 					console.log(err);
 					msg.channel.createMessage('Something went wrong.')

@@ -40,6 +40,18 @@ module.exports = {
 			})
 		})
 	},
+	getServersWithContact: async (bot, id)=> {
+		return new Promise((res)=>{
+			bot.db.query(`SELECT * FROM servers WHERE contact_id LIKE ?`,["%"+id+"%"],(err,rows)=>{
+				if(err) {
+						console.log(err);
+						res(undefined)
+					} else {
+						res(rows);
+					}
+			})
+		})
+	},
 	updateServer: async (bot, id, prop, val)=> {
 		return new Promise(res=>{
 			switch(prop) {

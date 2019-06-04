@@ -10,14 +10,17 @@ module.exports = {
 		var dat = await bot.utils.verifyUsers(bot, guild.contact_id.split(" "));
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		if(!conf) return;
-		console.log(conf.reprole);
 		if(!conf.reprole) return;
 		await Promise.all(dat.pass.map(async m => {
-			try {
-				await msg.guild.removeMemberRole(m, conf.reprole)
-				return new Promise(res => setTimeout(()=> res(1), 100))
-			} catch(e) {
-				console.log(e);
+			var mg = await bot.utils.getServersWithContact(bot, m);
+			console.log(mg);
+			if(!(mg && mg.length > 1)) {
+				try {
+					await msg.guild.removeMemberRole(m, conf.reprole)
+					return new Promise(res => setTimeout(()=> res(1), 100))
+				} catch(e) {
+					console.log(e);
+				}
 			}
 		}))
 

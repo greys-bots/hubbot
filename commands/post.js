@@ -25,11 +25,11 @@ module.exports = {
 				url: guild.pic_url || ""
 			}
 		}}).then(message => {
-			bot.db.query(`INSERT INTO posts SET ?`,{
-				server_id: guild.id,
-				channel_id: chan.id,
-				message_id: message.id
-			})
+			bot.db.query(`INSERT INTO posts (server_id, channel_id, message_id) VALUES (?,?,?)`,[
+				guild.id,
+				chan.id,
+				message.id
+			])
 		})
 
 	}
