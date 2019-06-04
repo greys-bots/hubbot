@@ -11,11 +11,11 @@ module.exports = {
 			invite = inv;
 			var guild = await bot.utils.getServer(bot, invite.guild.id);
 			if(!guild) return msg.channel.createMessage("Server not fund");
-			bot.db.query(`UPDATE servers SET ? WHERE server_id=?`,[{
-				name: 		invite.guild.name, 
-				invite: 	"https://discord.gg/"+invite.code,
-				pic_url: 	`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`
-			}, invite.guild.id]);
+			bot.db.query(`UPDATE servers SET name=?, invite=?, pic_url=? WHERE server_id=?`,[
+				invite.guild.name, 
+				"https://discord.gg/"+invite.code,
+				`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`,
+				invite.guild.id]);
 			
 			var res = await bot.utils.updatePosts(bot, invite.guild.id);
 			if(!res) {
