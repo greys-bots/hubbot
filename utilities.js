@@ -1,5 +1,5 @@
 module.exports = {
-	genEmbeds: async (arr, genFunc, info = {})=> {
+	genEmbeds: async (arr, genFunc, info = {}) => {
 		return new Promise(res => {
 			var embeds = [];
 			var current = { embed: {
@@ -28,7 +28,16 @@ module.exports = {
 			res(embeds);
 		})
 	},
-	getServer: async (bot, id)=> {
+	genCode: (table, num = 4) =>{
+		var codestring="";
+		var codenum=0;
+		while (codenum<num){
+			codestring=codestring+table[Math.floor(Math.random() * (table.length))];
+			codenum=codenum+1;
+		}
+		return codestring;
+	},
+	getServer: async (bot, id) => {
 		return new Promise((res)=>{
 			bot.db.query(`SELECT * FROM servers WHERE server_id=?`,[id],(err,rows)=>{
 				if(err) {
@@ -40,7 +49,7 @@ module.exports = {
 			})
 		})
 	},
-	getServersWithContact: async (bot, id)=> {
+	getServersWithContact: async (bot, id) => {
 		return new Promise((res)=>{
 			bot.db.query(`SELECT * FROM servers WHERE contact_id LIKE ?`,["%"+id+"%"],(err,rows)=>{
 				if(err) {
@@ -98,6 +107,37 @@ module.exports = {
 			}
 		})
 	},
+	deleteServer: async (bot, id) => {
+		return new Promise(res => {
+			bot.db.query('DELETE FROM servers WHERE id=?',[id],(err,rows)=>{
+				if(err) {
+					cosole.log(err);
+					res(false)
+				} else {
+					bot.db.query('DELETE FROM posts WHERE server_id=?',[id],(err,rows)=>{
+						if(err) {
+							cosole.log(err);
+							res(false)
+						} else {
+							res(true)
+						}
+					})
+				}
+			})
+		})
+	},
+	getPosts: async (bot, id, chanid) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM posts WHERE server_id=? AND channel_id=?`,[id, chanid], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false);
+				} else {
+					res(rows);
+				}
+			})
+		})
+	},
 	updatePosts: async (bot, id) => {
 		return new Promise(async res=> {
 			var guild = await bot.utils.getServer(bot, id)
@@ -138,18 +178,6 @@ module.exports = {
 						console.log(e);
 						res(false);
 					})
-				}
-			})
-		})
-	},
-	getPosts: async (bot, id, chanid) => {
-		return new Promise(res => {
-			bot.db.query(`SELECT * FROM posts WHERE server_id=? AND channel_id=?`,[id, chanid], (err, rows)=> {
-				if(err) {
-					console.log(err);
-					res(false);
-				} else {
-					res(rows);
 				}
 			})
 		})
@@ -195,21 +223,124 @@ module.exports = {
 			})
 		})
 	},
-	deleteServer: async (bot, id) => {
-		return new Promise(res => {
-			bot.db.query('DELETE FROM servers WHERE id=?',[id],(err,rows)=>{
+	getConfig: async (bot, id)=> {
+		return new Promise(res=>{
+			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[id], (err,rows)=>{
 				if(err) {
-					cosole.log(err);
-					res(false)
+					console.log(err);
+					res(false);
 				} else {
-					bot.db.query('DELETE FROM posts WHERE server_id=?',[id],(err,rows)=>{
-						if(err) {
-							cosole.log(err);
-							res(false)
-						} else {
-							res(true)
-						}
-					})
+					res(rows[0]);
+				}
+			})
+		})
+	},
+	getReactionRoles: async (bot, id) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactroles WHERE server_id=?`,[id],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows);
+				}
+			})
+		})
+	},
+	getReactionRolesByCategory: async (bot, serverid, categoryid) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactroles WHERE server_id=? AND category=?`,[serverid, categoryid],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows);
+				}
+			})
+		})
+	},
+	getReactionRoleByReaction: async (bot, id, emoji, postid) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactroles WHERE server_id=? AND emoji=? AND post_id=?`,[id, emoji, postid],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0]);
+				}
+			})
+		})
+	},
+	getReactionRole: async (bot, id, role) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactroles WHERE server_id=? AND role_id=?`,[id, role],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0]);
+				}
+			})
+		})
+	},
+	updateReactRolePost: async (bot, id, msg) => {
+		//collect message IDs w/ a map, if(!arr.includes(ID)) arr.push(ID); else return undefined (filter)
+		return new Promise(async res => {
+			var roles = await bot.utils.getReactionRoles(bot, id);
+			if(!roles || roles.length == 0) return res(false);
+			if(!roles.find(r => r.category == null || r.category == 'uncategorized').post_id) return res(true);
+			var uncat = roles.find(r => r.category == null || r.category == 'uncategorized');
+			await bot.editMessage(uncat.post_channel, uncat.post_id, {embed: {
+				title: "Server Reaction Roles",
+				description: "All available roles for the server",
+				fields: roles.map(r => {
+					var rl = msg.guild.roles.find(x => x.id == r.role_id);
+					return {name: `${rl.name} (${r.emoji.includes(":") ? `<${r.emoji}>` : r.emoji})`, value: r.description || "*(no description provided)*"}
+				})
+			}}).then(message => {	
+				console.log(message.reactions);			
+				var emoji = roles.map(r => r.emoji);
+				var oldreacts = Object.keys(message.reactions)
+								.filter(rr => message.reactions[rr].me)
+								.filter(rr => !emoji.includes(rr) && !emoji.includes(":"+rr));
+				emoji.forEach(rc => message.addReaction(rc));
+				oldreacts.forEach(rc => message.removeReaction(rc.replace(/^:/,"")));
+
+				bot.db.query(`UPDATE reactroles SET post_channel = ?, post_id = ? WHERE server_id = ?`,[
+					message.channel.id,
+					message.id,
+					message.guild.id
+				], (err, rows)=> {
+					if(err) console.log(err);
+				})
+				
+				res(true);
+			}).catch(e => {
+				console.log(e);
+				res(false)
+			})
+		})
+	},
+	getReactionCategories: async (bot, id) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=?`,[id],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows);
+				}
+			})
+		})
+	},
+	getReactionCategory: async (bot, id, categoryid) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=? AND hid=?`,[id, categoryid],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0]);
 				}
 			})
 		})
@@ -236,18 +367,6 @@ module.exports = {
 				}
 			})).then(()=> {
 				res(results);
-			})
-		})
-	},
-	getConfig: async (bot, id)=> {
-		return new Promise(res=>{
-			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[id], (err,rows)=>{
-				if(err) {
-					console.log(err);
-					res(false);
-				} else {
-					res(rows[0]);
-				}
 			})
 		})
 	}

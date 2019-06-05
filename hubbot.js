@@ -10,7 +10,9 @@ bot.db		= dblite('data.sqlite',"-header");
 
 bot.utils = require('./utilities')
 
-bot.prefix		= "hub!";
+bot.CHARS = process.env.CHARS;
+
+bot.prefix		= "hut!";
 
 bot.commands	= {};
 
@@ -36,7 +38,29 @@ async function setup() {
     	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
         server_id   	BIGINT,
         banlog_channel	BIGINT,
-        reprole 		BIGINT
+        reprole 		BIGINT,
+        delist_channel	BIGINT
+    )`);
+
+    bot.db.query(`CREATE TABLE IF NOT EXISTS reactroles (
+    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+    	server_id		BIGINT,
+    	role_id 		BIGINT,
+    	emoji 			TEXT,
+    	description 	TEXT,
+    	post_channel	BIGINT,
+    	post_id 		BIGINT,
+    	category 		TEXT
+    )`);
+
+    bot.db.query(`CREATE TABLE IF NOT EXISTS reactcategories (
+    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+    	hid 			TEXT,
+    	server_id		BIGINT,
+    	name 			TEXT,
+    	description 	TEXT,
+    	post_channel	BIGINT,
+    	post_id 		BIGINT
     )`);
 
 	var files = fs.readdirSync("./commands");
@@ -148,28 +172,63 @@ bot.on("messageCreate",async (msg)=>{
 	else msg.channel.createMessage("Command not found.");
 });
 
-bot.on("messageReactionAdd",async (msg, emoji, user)=>{
+bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 	if(bot.user.id == user) return;
-	if(!bot.pages) return;
-	if(!bot.pages[msg.id]) return;
-	if(!(bot.pages[msg.id].user == user)) return
-	if(emoji.name == "\u2b05") {
-		if(bot.pages[msg.id].index == 0) {
-			bot.pages[msg.id].index = bot.pages[msg.id].data.length-1;
-		} else {
-			bot.pages[msg.id].index -= 1;
+	if(bot.pages && bot.pages[msg.id] && bot.pages[msg.id].user == user) {
+		if(emoji.name == "\u2b05") {
+			if(bot.pages[msg.id].index == 0) {
+				bot.pages[msg.id].index = bot.pages[msg.id].data.length-1;
+			} else {
+				bot.pages[msg.id].index -= 1;
+			}
+			bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
+		} else if(emoji.name == "\u27a1") {
+			if(bot.pages[msg.id].index == bot.pages[msg.id].data.length-1) {
+				bot.pages[msg.id].index = 0;
+			} else {
+				bot.pages[msg.id].index += 1;
+			}
+			bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
+		} else if(emoji.name == "\u23f9") {
+			bot.deleteMessage(msg.channel.id, msg.id);
+			delete bot.pages[msg.id];
 		}
-		bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
-	} else if(emoji.name == "\u27a1") {
-		if(bot.pages[msg.id].index == bot.pages[msg.id].data.length-1) {
-			bot.pages[msg.id].index = 0;
-		} else {
-			bot.pages[msg.id].index += 1;
+	} else {
+		var role = await bot.utils.getReactionRoleByReaction(bot, 
+								msg.channel.guild.id, (emoji.id ?
+								`:${emoji.name}:${emoji.id}` :
+								emoji.name), msg.id);
+		if(!role) return;
+		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+		if(!rl) return;
+		try {
+			msg.channel.guild.addMemberRole(user, rl.id);
+			await bot.getDMChannel(user).then(ch => {
+				ch.createMessage(`Gave you role **${rl.name}** in ${msg.channel.guild.name}!`)
+			})
+		} catch(e) {
+			console.log(e);
 		}
-		bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
-	} else if(emoji.name == "\u23f9") {
-		bot.deleteMessage(msg.channel.id, msg.id);
-		delete bot.pages[msg.id];
+	}
+});
+
+bot.on("messageReactionRemove", async (msg, emoji, user)=>{
+	if(bot.user.id == user) return;
+
+	var role = await bot.utils.getReactionRoleByReaction(bot, 
+								msg.channel.guild.id, (emoji.id ?
+								`:${emoji.name}:${emoji.id}` :
+								emoji.name), msg.id);
+	if(!role) return;
+	var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+	if(!rl) return;
+	try {
+		msg.channel.guild.removeMemberRole(user, rl.id);
+		await bot.getDMChannel(user).then(ch => {
+			ch.createMessage(`Removed role **${rl.name}** in ${msg.channel.guild.name}!`)
+		})
+	} catch(e) {
+		console.log(e);
 	}
 });
 

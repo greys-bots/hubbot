@@ -19,13 +19,25 @@ module.exports = {
 		if(conf.reprole) {
 			var role = msg.guild.roles.find(rl => rl.id == conf.reprole);
 			if(role) {
-				textconf+="Represenative role: "+role.mention;
+				textconf+="Represenative role: "+role.mention+"\n";
 			} else {
-				textconf+="Representative role: (not provided)";
+				textconf+="Representative role: (not provided)\n";
 			}
 		} else {
-			textconf+="Representative role: (not provided)";
+			textconf+="Representative role: (not provided)\n";
 		}
+
+		if(conf.delist_channel) {
+			chan = msg.guild.channels.find(ch => ch.id == conf.delist_channel);
+			if(chan) {
+				textconf+="Delist channel: "+chan.mention+"\n";
+			} else {
+				textconf+="Delist channel: (not provided)\n";
+			}
+		} else {
+			textconf+="Delist channel: (not provided)\n";
+		}
+
 		msg.channel.createMessage(`Current configs:\n`+textconf);
 	},
 	alias: ['conf'],
@@ -65,7 +77,8 @@ module.exports.subcommands.banlog = {
 				}
 			})
 		}
-	}
+	},
+	alias: ['banchannel', "banlogs", "banlogchannel"]
 }
 
 module.exports.subcommands.reprole = {
@@ -102,4 +115,41 @@ module.exports.subcommands.reprole = {
 			})
 		}
 	}
+}
+
+module.exports.subcommands.delist = {
+	help: ()=> "Sets delist channel",
+	usage: ()=> [" [channel] - Sets delist channel for the server (NOTE: can be channel ID, channel mention, or channel name"],
+	execute: async (bot, msg, args)=> {
+		if(!args[0]) return msg.channel.createMessage('Please provide a channel.');
+		var chan = msg.channelMentions.length > 0 ?
+				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
+				   msg.guild.channels.find(ch => ch.id == args[0] || ch.name == args[0]);
+
+		var conf = await bot.utils.getConfig(bot, msg.guild.id);
+
+		if(conf) {
+			bot.db.query(`UPDATE configs SET delist_channel=? WHERE server_id=?`,[chan.id, msg.guild.id],(err,rows)=>{
+				if(err) {
+					console.log(err);
+					msg.channel.createMessage('Something went wrong.')
+				} else {
+					msg.channel.createMessage('Banlog channel set!');
+				}
+			})
+		} else {
+			bot.db.query(`INSERT INTO configs (server_id, delist_channel) VALUES (?,?)`,[
+					msg.guild.id,
+					chan.id
+			],(err,rows)=>{
+				if(err) {
+					console.log(err);
+					msg.channel.createMessage('Something went wrong.')
+				} else {
+					msg.channel.createMessage('Delist channel set!');
+				}
+			})
+		}
+	},
+	alias: ['delistchannel', "delete", "delisting", "deletechannel", "denychannel", "deny"]
 }
