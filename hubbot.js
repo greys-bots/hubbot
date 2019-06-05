@@ -12,7 +12,7 @@ bot.utils = require('./utilities')
 
 bot.CHARS = process.env.CHARS;
 
-bot.prefix		= "hut!";
+bot.prefix		= process.env.PREFIX;
 
 bot.commands	= {};
 
