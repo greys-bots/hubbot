@@ -38,12 +38,13 @@ module.exports = {
 			channel.createMessage({embed: {
 				title: "Server Delisted",
 				fields: [
-					{name: "Server Name", value: guild.name},
-					{name: "Delist Reason", value: args.slice(1).join(" ")}
+					{name: "Server Name", value: guild.name || "(unnamed)"},
+					{name: "Delist Reason", value: args.slice(1).join(" ") || "(no reason given)"}
 				],
 				thumbnail: {
 					url: "https://cdn.discordapp.com/attachments/585890796671336451/585890824659795980/Plural_Hub_Ban_logo.png"
-				}
+				},
+				timestamp: new Date()
 			}})
 		}
 	},

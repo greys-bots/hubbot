@@ -16,7 +16,8 @@ module.exports = {
 			],
 			thumbnail: {
 				url: "https://cdn.discordapp.com/attachments/585890796671336451/585890824659795980/Plural_Hub_Ban_logo.png"
-			}
+			},
+			timestamp: new Date()
 		}})
 	}
 }

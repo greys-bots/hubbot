@@ -19,6 +19,10 @@ module.exports = {
 			],
 			thumbnail: {
 				url: guild.pic_url || ""
+			},
+			color: 3447003,
+			footer: {
+				text: `ID: ${guild.server_id}`
 			}
 		}})
 	}

@@ -134,7 +134,7 @@ module.exports.subcommands.delist = {
 					console.log(err);
 					msg.channel.createMessage('Something went wrong.')
 				} else {
-					msg.channel.createMessage('Banlog channel set!');
+					msg.channel.createMessage('Delist channel set!');
 				}
 			})
 		} else {

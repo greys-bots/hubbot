@@ -71,12 +71,13 @@ module.exports = {
 					},
 					{
 						name: "**__Reason__**",
-						value: reason || "Something is fucky"
+						value: reason || "(no reason given)"
 					}
-					]
+					],
+					timestamp: new Date()
 				}}
 			}
-			if(conf && conf.banlog_channel && msg.guild.channels.find(ch => ch.id == conf.banlog_channel))
+			if(conf && conf.banlog_channel && msg.guild.channels.find(ch => ch.id == conf.banlog_channel) && !message.content)
 				var channel = msg.guild.channels.find(ch => ch.id == conf.banlog_channel);
 			else channel = msg.channel;
 

@@ -23,7 +23,8 @@ module.exports = {
 			],
 			thumbnail: {
 				url: guild.pic_url || ""
-			}
+			},
+			color: 3447003
 		}}).then(message => {
 			bot.db.query(`INSERT INTO posts (server_id, channel_id, message_id) VALUES (?,?,?)`,[
 				guild.id,

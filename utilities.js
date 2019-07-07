@@ -165,7 +165,8 @@ module.exports = {
 							],
 							thumbnail: {
 								url: guild.pic_url || ""
-							}
+							},
+							color: 3447003
 						}}).then(() => {
 							return new Promise(res2 => {setTimeout(()=>res2(1), 100)})
 						}).catch(e => {

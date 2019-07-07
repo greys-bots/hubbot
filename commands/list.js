@@ -10,7 +10,7 @@ module.exports = {
 				if(rows) {
 					if(rows.length > 10) {
 						var embeds = await bot.utils.genEmbeds(rows, dat => {
-							return {name: dat.name, value: dat.server_id}
+							return {name: dat.name || "(unnamed)", value: dat.server_id}
 						}, {
 							title: "Servers",
 							description: "Currently indexed servers"
@@ -39,7 +39,7 @@ module.exports = {
 							title: "Servers",
 							description: "Currently indexed servers",
 							fields: rows.map(s => {
-								return {name: s.name, value: s.server_id}
+								return {name: s.name || "(unnamed)", value: s.server_id}
 							})
 						}})
 					}
