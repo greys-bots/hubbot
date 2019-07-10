@@ -166,7 +166,10 @@ module.exports = {
 							thumbnail: {
 								url: guild.pic_url || ""
 							},
-							color: 3447003
+							color: 3447003,
+							footer: {
+								text: `ID: ${guild.server_id}`
+							}
 						}}).then(() => {
 							return new Promise(res2 => {setTimeout(()=>res2(1), 100)})
 						}).catch(e => {
