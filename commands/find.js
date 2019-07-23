@@ -11,5 +11,6 @@ module.exports = {
 					return srv.name.toLowerCase().includes(args.join(" ").toLowerCase()) ? `${srv.name} (${srv.server_id})` : null}).filter(x => x!=null).join('\n') || "None!")
 			}
 		})
-	}
+	},
+	alias: ['servers', 'server']
 }
