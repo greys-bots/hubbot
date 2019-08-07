@@ -75,9 +75,6 @@ module.exports.subcommands.name = {
 				msg.channel.createMessage('Description changed!')
 			}
 		})
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	},
 	alias: ["describe", "desc"]
 }
@@ -98,9 +95,6 @@ module.exports.subcommands.description = {
 				msg.channel.createMessage('Description changed!')
 			}
 		})
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	},
 	alias: ["describe", "desc"]
 }
@@ -115,7 +109,7 @@ module.exports.subcommands.add = {
 
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args[1] || r.name == args.slice(1).join(" ")).id;
+				   msg.guild.roles.find(r => r.id == args[1] || r.name.toLowerCase() == args.slice(1).join(" ").toLowerCase()).id;
 		if(!role) return msg.channel.createMessage('Role not found');
 		var rr = await bot.utils.getReactionRole(bot, msg.guild.id, role);
 		if(!rr) return msg.channel.createMessage('Reaction role not found');
@@ -132,9 +126,6 @@ module.exports.subcommands.add = {
 
 			}
 		})
-
-		var res = await bot.utils.updateReactCategoryPost(bot, msg.guild.id, msg, args[0]);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	}
 }
 
@@ -148,7 +139,7 @@ module.exports.subcommands.remove = {
 
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args[1] || r.name == args.slice(1).join(" ")).id;
+				   msg.guild.roles.find(r => r.id == args[1] || r.name.toLowerCase() == args.slice(1).join(" ").toLowerCase()).id;
 		if(!role) return msg.channel.createMessage('Role not found');
 		var rr = await bot.utils.getReactionRole(bot, msg.guild.id, role);
 		if(!rr) return msg.channel.createMessage('Reaction role not found');

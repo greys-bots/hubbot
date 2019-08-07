@@ -48,7 +48,7 @@ module.exports.subcommands.add = {
 		var nargs = args.join(" ").split("\n");
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == nargs[0] || r.name == nargs[0]).id;
+				   msg.guild.roles.find(r => r.id == nargs[0] || r.name.toLowerCase() == nargs[0].toLowerCase()).id;
 		var emoji = nargs[1].replace(/[<>\s]/g,"");
 		var description = nargs.slice(2).join("\n");
 		bot.db.query(`INSERT INTO reactroles (server_id, role_id, emoji, description, category) VALUES (?,?,?,?,?)`,[
@@ -75,7 +75,7 @@ module.exports.subcommands.remove = {
 	execute: async (bot, msg, args)=> {
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args.join(" ") || r.name == args.join(" ")).id;
+				   msg.guild.roles.find(r => r.id == args.join(" ") || r.name.toLowerCase() == args.join(" ").toLowerCase()).id;
 		bot.db.query(`DELETE FROM reactroles WHERE role_id=?`,[role],async (err, rows)=>{
 			if(err) {
 				console.log(err);
@@ -145,7 +145,7 @@ module.exports.subcommands.bind = {
 		console.log(args.slice(0, args.length-3));
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args[0] || r.name == args.slice(0, args.length-2));
+				   msg.guild.roles.find(r => r.id == args[0] || r.name.toLowerCase() == args.slice(0, args.length-2).join(" ").toLowerCase());
 		if(!role) return msg.channel.createMessage("Role not found");
 		role = await bot.utils.getReactionRole(bot, msg.guild.id, role.id);
 		if(!role) return msg.channel.createMessage("Reaction role not found");
@@ -259,7 +259,7 @@ module.exports.subcommands.emoji = {
 		if(!roles || roles.length == 0) return msg.channel.createMessage('No reaction roles available');
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args.slice(0, -1).join(" ") || r.name == args.slice(0, -1).join(" ")).id;
+				   msg.guild.roles.find(r => r.id == args.slice(0, -1).join(" ") || r.name.toLowerCase() == args.slice(0, -1).join(" ").toLowerCase()).id;
 		var emoji = args[args.length - 1].replace(/[<>]/g,"");
 		if(!role || (role && !roles.find(r => r.role_id == role)))
 			return msg.channel.createMessage('Role does not exist');
@@ -284,7 +284,7 @@ module.exports.subcommands.description = {
 		var nargs = args.join(" ").split("\n");
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == nargs[0] || r.name == nargs[0]).id;
+				   msg.guild.roles.find(r => r.id == nargs[0] || r.name.toLowerCase() == nargs[0].toLowerCase()).id;
 		if(!role || (role && !roles.find(r => r.role_id == role)))
 			return msg.channel.createMessage('Role does not exist');
 
