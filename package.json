@@ -12,7 +12,7 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "supervisor -e .js,.json -i data.sqlite,data.sqlite-journal hubbot.js"
   },
   "repository": {
     "type": "git",

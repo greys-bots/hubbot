@@ -9,7 +9,7 @@ module.exports = {
 			} else {
 				if(rows) {
 					if(rows.length > 10) {
-						var embeds = await bot.utils.genEmbeds(rows, dat => {
+						var embeds = await bot.utils.genEmbeds(bot, rows, async dat => {
 							return {name: dat.name || "(unnamed)", value: dat.server_id}
 						}, {
 							title: "Servers",

@@ -48,8 +48,6 @@ async function setup() {
     	role_id 		BIGINT,
     	emoji 			TEXT,
     	description 	TEXT,
-    	post_channel	BIGINT,
-    	post_id 		BIGINT,
     	category 		TEXT
     )`);
 
@@ -58,10 +56,17 @@ async function setup() {
     	hid 			TEXT,
     	server_id		BIGINT,
     	name 			TEXT,
-    	description 	TEXT,
-    	post_channel	BIGINT,
-    	post_id 		BIGINT
+    	description 	TEXT
     )`);
+
+    bot.db.query(`CREATE TABLE IF NOT EXISTS reactposts (
+		id	INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id	TEXT,
+		channel_id	TEXT,
+		message_id	TEXT,
+		category_id	TEXT,
+		roles		TEXT
+	)`);
 
 	var files = fs.readdirSync("./commands");
 	await Promise.all(files.map(f => {
@@ -193,44 +198,46 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 			bot.deleteMessage(msg.channel.id, msg.id);
 			delete bot.pages[msg.id];
 		}
-	} else {
-		var role = await bot.utils.getReactionRoleByReaction(bot, 
-								msg.channel.guild.id, (emoji.id ?
-								`:${emoji.name}:${emoji.id}` :
-								emoji.name), msg.id);
-		if(!role) return;
-		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-		if(!rl) return;
-		try {
-			msg.channel.guild.addMemberRole(user, rl.id);
-			await bot.getDMChannel(user).then(ch => {
-				ch.createMessage(`Gave you role **${rl.name}** in ${msg.channel.guild.name}!`)
-			})
-		} catch(e) {
-			console.log(e);
-		}
+	}
+
+	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
+	if(!post) return;
+	var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
+	if(!role) return;
+	var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+	if(!rl) return;
+	try {
+		msg.channel.guild.addMemberRole(user, rl.id);
+	} catch(e) {
+		console.log(e);
+		await bot.getDMChannel(user).then(ch => {
+			ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+		})
 	}
 });
 
 bot.on("messageReactionRemove", async (msg, emoji, user)=>{
 	if(bot.user.id == user) return;
 
-	var role = await bot.utils.getReactionRoleByReaction(bot, 
-								msg.channel.guild.id, (emoji.id ?
-								`:${emoji.name}:${emoji.id}` :
-								emoji.name), msg.id);
+	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
+	if(!post) return;
+	var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
 	if(!role) return;
 	var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
 	if(!rl) return;
 	try {
 		msg.channel.guild.removeMemberRole(user, rl.id);
-		await bot.getDMChannel(user).then(ch => {
-			ch.createMessage(`Removed role **${rl.name}** in ${msg.channel.guild.name}!`)
-		})
 	} catch(e) {
 		console.log(e);
+		await bot.getDMChannel(user).then(ch => {
+			ch.createMessage(`Couldn't remove role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+		})
 	}
 });
+
+bot.on("messageDelete", async (msg) => {
+	bot.db.query(`DELETE FROM reactposts WHERE server_id=? AND channel_id=? AND message_id=?`,[msg.channel.guild.id, msg.channel.id, msg.id]);
+})
 
 setup();
 bot.connect();

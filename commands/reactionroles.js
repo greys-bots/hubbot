@@ -36,9 +36,6 @@ module.exports = {
 				}
 			})
 		}
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	},
 	alias: ['rr', 'reactroles', 'reactrole', 'reactionrole'],
 	subcommands: {}
@@ -52,7 +49,7 @@ module.exports.subcommands.add = {
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
 				   msg.guild.roles.find(r => r.id == nargs[0] || r.name == nargs[0]).id;
-		var emoji = nargs[1].replace(/[<>]/g,"");
+		var emoji = nargs[1].replace(/[<>\s]/g,"");
 		var description = nargs.slice(2).join("\n");
 		bot.db.query(`INSERT INTO reactroles (server_id, role_id, emoji, description, category) VALUES (?,?,?,?,?)`,[
 			msg.guild.id,
@@ -68,9 +65,6 @@ module.exports.subcommands.add = {
 				msg.channel.createMessage('React role created!')
 			}
 		})
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	},
 	alias: ['create', 'new']
 }
@@ -88,8 +82,6 @@ module.exports.subcommands.remove = {
 				msg.channel.createMessage('Something went wrong');
 			} else {
 				msg.channel.createMessage('React role deleted! NOTE: does not delete the actual role, nor remove it from members who have it');
-				var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-				if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 			}
 		})
 	},
@@ -97,8 +89,8 @@ module.exports.subcommands.remove = {
 }
 
 module.exports.subcommands.post = {
-	help: ()=> "Posts a message with all possible reaction roles",
-	usage: ()=> " [channel] - Posts reaction roles message in given channel (NOTE: only saves one post at a time)",
+	help: ()=> "Posts a message with all possible reaction roles. Use reaction categories or the `rr bind` command to post specific roles",
+	usage: ()=> " [channel] - Posts reaction roles message in given channel",
 	execute: async (bot, msg, args) => {
 		var roles = await bot.utils.getReactionRoles(bot, msg.guild.id);
 		if(!roles) return msg.channel.createMessage('No reaction roles available');
@@ -119,20 +111,18 @@ module.exports.subcommands.post = {
 				 	return {name: `${rl.name} (${r.emoji.includes(":") ? `<${r.emoji}>` : r.emoji})`, value: r.description || "*(no description provided)*"}
 				 } else {
 				 	invalid.push(r.role_id);
-				 	return {name: r.role_id, value: '*Role not found. Removing after list.*'}
+				 	return null;
 				 }
-			})
-		}}).then(message => {
+			}).filter(x => x!= null)
+		}}).then(m => {
 			var reacts = roles.map(r => r.emoji);
-			reacts.forEach(rc => message.addReaction(rc));
-			bot.db.query(`UPDATE reactroles SET post_channel = ?, post_id = ?, category = ? WHERE server_id = ?`,[
-				message.channel.id,
-				message.id,
-				"uncategorized",
-				message.guild.id
-			], (err, rows)=> {
-				if(err) console.log(err);
-			})
+			reacts.forEach(rc => m.addReaction(rc));
+			bot.db.query(`INSERT INTO reactposts (server_id, channel_id, message_id, roles) VALUES (?,?,?,?)`, [
+				m.guild.id,
+				m.channel.id,
+				m.id,
+				roles.map(r => { return {emoji: r.emoji, role_id: r.role_id} })
+			])
 		})
 
 		if(invalid.length > 0) {
@@ -144,18 +134,100 @@ module.exports.subcommands.post = {
 				}
 			})
 		}
+	}
+}
 
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
+module.exports.subcommands.bind = {
+	help: ()=> "Binds a reaction role to a certain message.",
+	usage: ()=> [" [role name] [channel] [messageID] - Binds a role to the message"],
+	execute: async (bot, msg, args) => {
+		if(!args[2]) return msg.channel.createMessage("This command requires at least 3 arguments.");
+		console.log(args.slice(0, args.length-3));
+		var role = msg.roleMentions.length > 0 ?
+				   msg.roleMentions[0] :
+				   msg.guild.roles.find(r => r.id == args[0] || r.name == args.slice(0, args.length-2));
+		if(!role) return msg.channel.createMessage("Role not found");
+		role = await bot.utils.getReactionRole(bot, msg.guild.id, role.id);
+		if(!role) return msg.channel.createMessage("Reaction role not found");
+		var channel = msg.channelMentions.length > 0 ?
+				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
+				   msg.guild.channels.find(ch => ch.id == args[args.length - 2] || ch.name == args[args.length - 2]);
+		if(!channel) return msg.channel.createMessage("Channel not found.");
+		var message = await bot.getMessage(channel.id, args[args.length-1]);
+		if(!message) return msg.channel.createMessage("Invalid message");
+
+		var post = await bot.utils.getReactionRolePost(bot, message.guild.id, message.id);
+		console.log(post);
+		if(post) {
+			post.roles.push({emoji: role.emoji, role_id: role.role_id});
+			bot.db.query(`UPDATE reactposts SET roles=? WHERE server_id=? AND channel_id=? AND message_id=?`,[post.roles, message.guild.id, message.channel.id, message.id], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					msg.channel.createMessage('Something went wrong')
+				} else {
+					msg.channel.createMessage('React role bound!')
+					message.addReaction(role.emoji.replace("^:",""));
+				}
+			});
+		} else {
+			post = [
+			message.guild.id,
+			message.channel.id,
+			message.id,
+			[{emoji: role.emoji, role_id: role.role_id}]
+			];
+			bot.db.query(`INSERT INTO reactposts (server_id, channel_id, message_id, roles) VALUES (?,?,?,?)`,post, (err, rows)=> {
+				if(err) {
+					console.log(err);
+					msg.channel.createMessage('Something went wrong')
+				} else {
+					msg.channel.createMessage('React role bound!')
+					message.addReaction(role.emoji.replace("^:",""));
+				}
+			})
+		}
 	}
 }
 
 module.exports.subcommands.update = {
-	help: ()=> "Updates react role post (eg: in case roles have been deleted)",
-	usage: ()=> [" - Updates react role post"],
+	help: ()=> "Updates a react role post (eg: in case roles have been deleted)",
+	usage: ()=> [" [channel] [messageID] - Updates the given role post. Must belong to the bot in order to be updated"],
 	execute: async (bot, msg, args) => {
 		var roles = await bot.utils.getReactionRoles(bot, msg.guild.id);
 		if(!roles) return msg.channel.createMessage('No reaction roles available');
+
+		var channel = msg.channelMentions.length > 0 ?
+				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
+				   msg.guild.channels.find(ch => ch.id == args[0] || ch.name == args[0]);
+		if(!channel) return msg.channel.createMessage('Channel not found');
+
+		var message;
+
+		var invalid;
+		roles = roles.map(r => {
+							var rl = msg.guild.roles.find(x => x.id == r.role_id);
+							 if(rl) {
+							 	return r
+							 } else {
+							 	invalid.push(r.role_id);
+							 	return null							
+							 }
+						}).filter(x => x!=null);
+		try {
+			message = await bot.getMessage(channel.id, args[1]);
+		} catch(e) {
+			return msg.channel.createMessage("Message not found");
+		}
+
+		if(message.author.id != bot.user.id) return msg.channel.createMessage("Message must belong to me in order to be updated");
+
+		try {
+			await bot.utils.updateReactRolePost(bot, message, roles);
+		} catch(e) {
+			console.log(e)
+			return msg.channel.createMessage("Something went wrong");
+		}
+		msg.channel.createMessage("Post updated!")
 
 		var invalid = roles.map(r => {
 			var rl = msg.guild.roles.find(x => x.id == r.role_id);
@@ -174,10 +246,7 @@ module.exports.subcommands.update = {
 					msg.channel.createMessage('Deleted reaction roles that no longer exist');
 				}
 			})
-		}
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');		
+		}	
 
 	}
 }
@@ -203,9 +272,6 @@ module.exports.subcommands.emoji = {
 				msg.channel.createMessage('Emoji changed!')
 			}
 		})
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	}
 }
 
@@ -230,9 +296,6 @@ module.exports.subcommands.description = {
 				msg.channel.createMessage('Description changed!')
 			}
 		})
-
-		var res = await bot.utils.updateReactRolePost(bot, msg.guild.id, msg);
-		if(!res) msg.channel.createMessage('Something went wrong while updating posts');
 	},
 	alias: ["describe", "desc"]
 }
