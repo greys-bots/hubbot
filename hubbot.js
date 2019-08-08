@@ -47,8 +47,7 @@ async function setup() {
     	server_id		BIGINT,
     	role_id 		BIGINT,
     	emoji 			TEXT,
-    	description 	TEXT,
-    	category 		TEXT
+    	description 	TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactcategories (
@@ -56,7 +55,8 @@ async function setup() {
     	hid 			TEXT,
     	server_id		BIGINT,
     	name 			TEXT,
-    	description 	TEXT
+    	description 	TEXT,
+    	roles 			TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactposts (

@@ -109,15 +109,15 @@ module.exports.subcommands.add = {
 
 		var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args[1] || r.name.toLowerCase() == args.slice(1).join(" ").toLowerCase()).id;
+				   msg.guild.roles.find(r => r.id == args[1] || r.name.toLowerCase() == args.slice(1).join(" ").toLowerCase());
 		if(!role) return msg.channel.createMessage('Role not found');
+		role = role.id;
 		var rr = await bot.utils.getReactionRole(bot, msg.guild.id, role);
 		if(!rr) return msg.channel.createMessage('Reaction role not found');
-		console.log(role);
-		console.log(rr);
-		console.log(category);
+		
+		category.roles.push(rr.id);
 
-		bot.db.query(`UPDATE reactroles SET category=? WHERE server_id=? AND role_id=?`,[category.hid, msg.guild.id, role], (err, rows)=>{
+		bot.db.query(`UPDATE reactcategories SET roles=? WHERE server_id=? AND hid=?`,[category.roles, msg.guild.id, category.hid], (err, rows)=>{
 			if(err) {
 				console.log(err);
 				msg.channel.createMessage('Something went wrong')

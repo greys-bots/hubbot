@@ -285,12 +285,36 @@ module.exports = {
 	},
 	getReactionRolesByCategory: async (bot, serverid, categoryid) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM reactroles WHERE server_id=? AND category=?`,[serverid, categoryid],(err, rows)=>{
+			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=? AND hid=?`,[serverid, categoryid], {
+				id: Number,
+				hid: String,
+				server_id: String,
+				name: String,
+				description: String,
+				roles: JSON.parse
+			}, async (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(undefined);
 				} else {
-					res(rows);
+					if(rows[0].roles) {
+						var roles = [];
+						await Promise.all(rows[0].roles.map((r,i) => {
+							return new Promise(res2 => {
+								bot.db.query(`SELECT * FROM reactroles WHERE id=?`,[r], (err, rls)=> {
+									console.log(rls[0]);
+									roles[i] = rls[0]
+								});
+								setTimeout(()=> res2(''), 100)
+							})
+						})).then(()=> {
+							console.log(roles);
+							res(roles)
+						})
+					} else {
+						res(undefined);
+					}
+
 				}
 			})
 		})
@@ -371,7 +395,14 @@ module.exports = {
 	},
 	getReactionCategories: async (bot, id) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=?`,[id],(err, rows)=>{
+			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=?`,[id], {
+				id: Number,
+				hid: String,
+				server_id: String,
+				name: String,
+				description: String,
+				roles: JSON.parse
+			}, (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(undefined);
@@ -383,7 +414,14 @@ module.exports = {
 	},
 	getReactionCategory: async (bot, id, categoryid) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=? AND hid=?`,[id, categoryid],(err, rows)=>{
+			bot.db.query(`SELECT * FROM reactcategories WHERE server_id=? AND hid=?`,[id, categoryid], {
+				id: Number,
+				hid: String,
+				server_id: String,
+				name: String,
+				description: String,
+				roles: JSON.parse
+			}, (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(undefined);
