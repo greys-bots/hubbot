@@ -31,11 +31,12 @@ module.exports.subcommands.create = {
 	execute: async (bot, msg, args)=> {
 		var nargs = args.join(" ").split("\n");
 		var code = bot.utils.genCode(bot.CHARS);
-		bot.db.query(`INSERT INTO reactcategories (hid, server_id, name, description) VALUES (?,?,?,?)`,[
+		bot.db.query(`INSERT INTO reactcategories (hid, server_id, name, description, roles) VALUES (?,?,?,?,?)`,[
 			code,
 			msg.guild.id,
 			nargs[0],
-			nargs.slice(1).join("\n")
+			nargs.slice(1).join("\n"),
+			[]
 		], (err, rows)=> {
 			if(err) {
 				console.log(err);
