@@ -280,15 +280,6 @@ module.exports = {
 	},
 	updateConfig: async function(bot,srv,key,val) {
 		return new Promise((res)=> {
-			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[srv], (err, rows)=> {
-				if(err) {
-					console.log(err);
-				} else {
-					if(!rows[0]) {
-						bot.db.query(`INSERT INTO configs VALUES (?,?,?,?,?,?,?,?,?)`,[srv, "", {}, "", {}, "", {}, [], {}, []]);
-					}
-				}
-			})
 			bot.db.query(`UPDATE configs SET ?=? WHERE server_id=?`,[key, val, srv], (err, rows)=> {
 				if(err) {
 					console.log(err);
