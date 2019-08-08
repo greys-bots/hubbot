@@ -51,12 +51,11 @@ module.exports.subcommands.add = {
 				   msg.guild.roles.find(r => r.id == nargs[0] || r.name.toLowerCase() == nargs[0].toLowerCase()).id;
 		var emoji = nargs[1].replace(/[<>\s]/g,"");
 		var description = nargs.slice(2).join("\n");
-		bot.db.query(`INSERT INTO reactroles (server_id, role_id, emoji, description, category) VALUES (?,?,?,?,?)`,[
+		bot.db.query(`INSERT INTO reactroles (server_id, role_id, emoji, description) VALUES (?,?,?,?,?)`,[
 			msg.guild.id,
 			role,
 			emoji,
-			description,
-			"uncategorized"
+			description
 		], (err, rows)=> {
 			if(err) {
 				console.log(err);

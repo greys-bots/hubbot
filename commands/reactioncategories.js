@@ -101,31 +101,53 @@ module.exports.subcommands.description = {
 
 module.exports.subcommands.add = {
 	help: ()=> "Changes description for a category",
-	usage: ()=> " [ID] [role] - Adds role to a category",
+	usage: ()=> " [ID] [comma, separated, role names] - Adds role to a category",
 	execute: async (bot, msg, args)=> {
 		var category = await bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category)
 			return msg.channel.createMessage('Category does not exist');
 
-		var role = msg.roleMentions.length > 0 ?
+		var result = [];
+		var roles = args.slice(1).join(" ").split(/,\s+/g);
+		console.log(roles);
+		await Promise.all(roles.map(async rl => {
+			var role = msg.roleMentions.length > 0 ?
 				   msg.roleMentions[0] :
-				   msg.guild.roles.find(r => r.id == args[1] || r.name.toLowerCase() == args.slice(1).join(" ").toLowerCase());
-		if(!role) return msg.channel.createMessage('Role not found');
-		role = role.id;
-		var rr = await bot.utils.getReactionRole(bot, msg.guild.id, role);
-		if(!rr) return msg.channel.createMessage('Reaction role not found');
-		
-		category.roles.push(rr.id);
-
-		bot.db.query(`UPDATE reactcategories SET roles=? WHERE server_id=? AND hid=?`,[category.roles, msg.guild.id, category.hid], (err, rows)=>{
-			if(err) {
-				console.log(err);
-				msg.channel.createMessage('Something went wrong')
-			} else {
-				msg.channel.createMessage('Role added to category!')
-
+				   msg.guild.roles.find(r => r.id == rl || r.name.toLowerCase() == rl.toLowerCase());
+			if(!role) {
+				result.push({succ: false, name: rl, reason: "Role not found"})
+				return new Promise(res => setInterval(()=> res(0), 100))
 			}
+			role = role.id;
+			var rr = await bot.utils.getReactionRole(bot, msg.guild.id, role);
+			if(!rr) {
+				result.push({succ: false, name: rl, reason: "React role not found"});
+				return new Promise(res => setInterval(()=> res(0), 100))
+			}
+			else {
+				result.push({succ: true, name: rl});
+				category.roles.push(rr.id);
+				return new Promise(res => setInterval(()=> res(0), 100))
+			}
+			
+		})).then(()=> {
+			bot.db.query(`UPDATE reactcategories SET roles=? WHERE server_id=? AND hid=?`,[category.roles, msg.guild.id, category.hid], (err, rows)=>{
+				if(err) {
+					console.log(err);
+					msg.channel.createMessage('Something went wrong')
+				} else {
+					msg.channel.createMessage({ embed: {
+						title: "Results",
+						fields: [
+							{name: "Added", value: result.filter(r => r.succ).map(r => r.name).join("\n") || "none"},
+							{name: "Not Added", value: result.filter(r => !r.succ).map(r => `${r.name} - ${r.reason}`).join("\n") || "none"},	
+						]
+					}})
+
+				}
+			})
 		})
+		
 	}
 }
 
@@ -147,12 +169,14 @@ module.exports.subcommands.remove = {
 		console.log(rr);
 		console.log(category);
 
-		bot.db.query(`UPDATE reactroles SET category=? WHERE server_id=? AND role_id=?`,["uncategorized", msg.guild.id, role], (err, rows)=>{
+		category.roles = category.roles.filter(r => r.id != rr.id);
+		bot.db.query(`UPDATE reactcategories SET roles=? WHERE server_id=? AND hid=?`,[category.roles, msg.guild.id, category.hid], (err, rows)=>{
 			if(err) {
 				console.log(err);
 				msg.channel.createMessage('Something went wrong')
 			} else {
-				msg.channel.createMessage('Role removed from category!')
+				msg.channel.createMessage('Role added to category!')
+
 			}
 		})
 	}
