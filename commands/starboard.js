@@ -46,17 +46,16 @@ module.exports.subcommands.add = {
 		var cfg = await bot.utils.getConfig(bot, msg.guild.id);
 		if(cfg && cfg.starboard) {
 			console.log(cfg.starboard);
-			if(cfg.starboard.boards && cfg.starboard.boards.find(c => c.channel == (chan))) {
-				return msg.channel.createMessage("Channel already configured.");
-			} else if(cfg.starboard.boards && cfg.starboard.boards.find(c => c.emoji == emoji)) {
-				return msg.channel.createMessage("Emoji already configured.");
+			if(cfg.starboard.boards) {
+				if(cfg.starboard.boards.find(c => c.channel == (chan))) return msg.channel.createMessage("Channel already configured.");
+				if(cfg.starboard.boards.find(c => c.emoji == emoji)) return msg.channel.createMessage("Emoji already configured.");
 			} else {
 				if(!cfg.starboard.boards) cfg.starboard.boards = [];
-				cfg.starboard.boards.push({channel: chan, emoji: emoji});
-				var sc = await bot.utils.updateConfig(bot, msg.guild.id, "starboard", cfg.starboard);
-				if(sc) msg.channel.createMessage("Config saved")
-				else msg.channel.createMessage("Something went wrong")
 			}
+			cfg.starboard.boards.push({channel: chan, emoji: emoji});
+			var sc = await bot.utils.updateConfig(bot, msg.guild.id, "starboard", cfg.starboard);
+			if(sc) msg.channel.createMessage("Config saved")
+			else msg.channel.createMessage("Something went wrong")
 		} else if(cfg && !cfg.starboard) {
 			cfg.starboard = {};
 			cfg.starboard.boards = [];
