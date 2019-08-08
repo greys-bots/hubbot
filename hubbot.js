@@ -39,7 +39,8 @@ async function setup() {
         server_id   	BIGINT,
         banlog_channel	BIGINT,
         reprole 		BIGINT,
-        delist_channel	BIGINT
+        delist_channel	BIGINT,
+        starboard 		TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactroles (
@@ -200,20 +201,37 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 		}
 	}
 
-	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
-	if(!post) return;
-	var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
-	if(!role) return;
-	var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-	if(!rl) return;
-	try {
-		msg.channel.guild.addMemberRole(user, rl.id);
-	} catch(e) {
-		console.log(e);
-		await bot.getDMChannel(user).then(ch => {
-			ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-		})
+	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
+	if(cfg && cfg.starboard && cfg.starboard.boards) {
+		var cf = cfg.starboard.boards.find(c => c.emoji == emoji.name || c.emoji == `:${emoji.name}:${emoji.id}`);
+		if(cf) {
+			var chan = cf.channel;
+			var member = msg.channel.guild.members.find(m => m.id == user);
+			var message = await bot.getMessage(msg.channel.id, msg.id);
+			var tolerance = cf.tolerance ? cf.tolerance : (cfg.starboard.tolerance || 2);
+			if((member.permission.has("manageMessages") && cfg.starboard.override) || (message.reactions[emoji.name].count === tolerance)) {
+				bot.utils.starMessage(bot, message, chan)
+			}
+		}
 	}
+
+	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
+	if(post) {
+		var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
+		if(!role) return;
+		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+		if(!rl) return;
+		try {
+			msg.channel.guild.addMemberRole(user, rl.id);
+		} catch(e) {
+			console.log(e);
+			await bot.getDMChannel(user).then(ch => {
+				ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+			})
+		}
+	}
+
+
 });
 
 bot.on("messageReactionRemove", async (msg, emoji, user)=>{

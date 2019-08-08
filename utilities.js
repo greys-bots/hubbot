@@ -261,12 +261,40 @@ module.exports = {
 	},
 	getConfig: async (bot, id)=> {
 		return new Promise(res=>{
-			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[id], (err,rows)=>{
+			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[id], {
+				id: Number,
+		        server_id: Number,
+		        banlog_channel: Number,
+		        reprole: Number,
+		        delist_channel: Number,
+		        starboard: JSON.parse
+			}, (err,rows)=>{
 				if(err) {
 					console.log(err);
 					res(false);
 				} else {
 					res(rows[0]);
+				}
+			})
+		})
+	},
+	updateConfig: async function(bot,srv,key,val) {
+		return new Promise((res)=> {
+			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[srv], (err, rows)=> {
+				if(err) {
+					console.log(err);
+				} else {
+					if(!rows[0]) {
+						bot.db.query(`INSERT INTO configs VALUES (?,?,?,?,?,?,?,?,?)`,[srv, "", {}, "", {}, "", {}, [], {boards: [{channel: chan, emoji: emoji}]}, []]);
+					}
+				}
+			})
+			bot.db.query(`UPDATE configs SET ?=? WHERE server_id=?`,[key, val, srv], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false)
+				} else {
+					res(true)
 				}
 			})
 		})
@@ -515,5 +543,29 @@ module.exports = {
 				res(results);
 			})
 		})
+	},
+	starMessage: async function(bot, msg, channel) {
+		var attach = [];
+		if(msg.attachments[0]) {
+			await Promise.all(msg.attachments.map(async (f,i) => {
+				var att = await bot.fetch(f.url);
+				attach.push({file: Buffer.from(await att.buffer()), name: f.filename});
+				return new Promise(res => {
+					setTimeout(()=> res(1), 100);
+				})
+			}))
+		}
+		var embed = {
+			author: {
+				name: `${msg.author.username}#${msg.author.discriminator}`,
+				icon_url: msg.author.avatarURL
+			},
+			footer: {
+				text: msg.channel.name
+			},
+			description: (msg.content || "*(image only)*") + `\n\n[Go to message](https://discordapp.com/channels/${msg.channel.guild.id}/${msg.channel.id}/${msg.id})`,
+			timestamp: new Date(msg.timestamp)
+		}
+		bot.createMessage(channel, {embed: embed}, attach ? attach : null)
 	}
 }
