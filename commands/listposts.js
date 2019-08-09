@@ -2,7 +2,7 @@ module.exports = {
 	help: ()=> "Lists all posts in the database",
 	usage: ()=> [" - Lists all posts the database has, for debug reasons"],
 	execute: async (bot, msg, args) => {
-		var posts = await bot.utils.getAllPosts(bot);
+		var posts = await bot.utils.getAllPosts(bot, msg.guild.id);
 		if(posts) {
 			if(posts.length > 10) {
 				var embeds = await bot.utils.genEmbeds(bot, posts, (dat, bot) => {

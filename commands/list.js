@@ -2,7 +2,7 @@ module.exports = {
 	help: ()=> "Lists all servers.",
 	usage: ()=> [" - Lists every server indexed so far"],
 	execute: async (bot, msg, args)=>{
-		bot.db.query(`SELECT * FROM servers`,async (err, rows)=>{
+		bot.db.query(`SELECT * FROM servers WHERE host_id=?`,[msg.guild.id],async (err, rows)=>{
 			if(err) {
 				console.log(err);
 				msg.channel.createMessage('There was an error!');

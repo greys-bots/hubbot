@@ -9,7 +9,7 @@ module.exports = {
 		let guild;
 		await bot.getInvite(id).then(async inv=>{
 			invite = inv;
-			var guild = await bot.utils.getServer(bot, invite.guild.id);
+			var guild = await bot.utils.getServer(bot, msg.guild.id, invite.guild.id);
 			if(!guild) return msg.channel.createMessage("Server not fund");
 			bot.db.query(`UPDATE servers SET name=?, invite=?, pic_url=? WHERE server_id=?`,[
 				invite.guild.name, 
@@ -17,7 +17,7 @@ module.exports = {
 				`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`,
 				invite.guild.id]);
 			
-			var res = await bot.utils.updatePosts(bot, invite.guild.id);
+			var res = await bot.utils.updatePosts(bot, msg.guild.id, invite.guild.id);
 			if(!res) {
 				msg.channel.createMessage('Something went wrong while updating post')
 			} else {

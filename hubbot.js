@@ -19,6 +19,7 @@ bot.commands	= {};
 async function setup() {
 	bot.db.query(`CREATE TABLE IF NOT EXISTS servers(
 		id         	INTEGER PRIMARY KEY AUTOINCREMENT,
+		host_id 	BIGINT
         server_id   BIGINT,
         contact_id  TEXT,
         name        TEXT,
@@ -29,6 +30,7 @@ async function setup() {
 
 	bot.db.query(`CREATE TABLE IF NOT EXISTS posts (
         id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        host_id 	BIGINT,
         server_id   BIGINT,
         channel_id  BIGINT,
         message_id  BIGINT
@@ -61,13 +63,20 @@ async function setup() {
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactposts (
-		id	INTEGER PRIMARY KEY AUTOINCREMENT,
+		id			INTEGER PRIMARY KEY AUTOINCREMENT,
 		server_id	TEXT,
 		channel_id	TEXT,
 		message_id	TEXT,
 		category_id	TEXT,
 		roles		TEXT
 	)`);
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS commands (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id 	BIGINT,
+		name 		TEXT,
+		actions 	TEXT
+	)`)
 
 	var files = fs.readdirSync("./commands");
 	await Promise.all(files.map(f => {

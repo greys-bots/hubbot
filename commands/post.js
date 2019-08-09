@@ -2,7 +2,7 @@ module.exports = {
 	help: ()=> "Posts server embed in a given channel",
 	usage: ()=> [' [channel] - Posts server in channel (NOTE: can be channel ID, name, or #mention)'],
 	execute: async (bot, msg, args)=> {
-		var guild = await bot.utils.getServer(bot, args[0]);
+		var guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage('Server not found.');
 		var chan = msg.channelMentions.length > 0 ?
 				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
@@ -29,7 +29,8 @@ module.exports = {
 				text: `ID: ${guild.server_id}`
 			}
 		}}).then(message => {
-			bot.db.query(`INSERT INTO posts (server_id, channel_id, message_id) VALUES (?,?,?)`,[
+			bot.db.query(`INSERT INTO posts (host_id, server_id, channel_id, message_id) VALUES (?,?,?,?)`,[
+				msg.guild.id,
 				guild.id,
 				chan.id,
 				message.id

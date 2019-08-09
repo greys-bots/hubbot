@@ -10,10 +10,11 @@ module.exports = {
 		await bot.getInvite(id).then(async inv=>{
 			invite = inv;
 			console.log(inv)
-			var exists = await bot.utils.getServer(bot, invite.guild.id);
+			var exists = await bot.utils.getServer(bot, msg.guild.id, invite.guild.id);
 			console.log(exists);
 			if(exists) return msg.channel.createMessage("Server already exists!");
-			bot.db.query(`INSERT INTO servers (server_id, name, invite, pic_url) VALUES (?,?,?,?)`,[
+			bot.db.query(`INSERT INTO servers (host_id,server_id, name, invite, pic_url) VALUES (?,?,?,?,?)`,[
+				msg.guild.id,
 				invite.guild.id,
 				invite.guild.name, 
 				"https://discord.gg/"+invite.code,

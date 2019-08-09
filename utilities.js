@@ -37,9 +37,9 @@ module.exports = {
 		}
 		return codestring;
 	},
-	getServer: async (bot, id) => {
+	getServer: async (bot, host, id) => {
 		return new Promise((res)=>{
-			bot.db.query(`SELECT * FROM servers WHERE server_id=?`,[id],(err,rows)=>{
+			bot.db.query(`SELECT * FROM servers WHERE host_id=? AND server_id=?`,[host, id],(err,rows)=>{
 				if(err) {
 						console.log(err);
 						res(undefined)
@@ -61,9 +61,9 @@ module.exports = {
 			})
 		})
 	},
-	getServersWithContact: async (bot, id) => {
+	getServersWithContact: async (bot, host, id) => {
 		return new Promise((res)=>{
-			bot.db.query(`SELECT * FROM servers WHERE contact_id LIKE ?`,["%"+id+"%"],(err,rows)=>{
+			bot.db.query(`SELECT * FROM servers WHERE host_id=? AND contact_id LIKE ?`,[host, "%"+id+"%"],(err,rows)=>{
 				if(err) {
 						console.log(err);
 						res(undefined)
@@ -73,60 +73,26 @@ module.exports = {
 			})
 		})
 	},
-	updateServer: async (bot, id, prop, val)=> {
+	updateServer: async (bot, host, id, prop, val)=> {
 		return new Promise(res=>{
-			switch(prop) {
-				case 'name':
-					bot.db.query(`UPDATE servers SET name=? WHERE server_id=?`, [val, id], (err, rows)=>{
-						if(err) {
-							console.log(err);
-							res(false);
-						} else {
-							res(true);
-						}
-					});
-					break;
-				case 'description':
-					bot.db.query(`UPDATE servers SET description=? WHERE server_id=?`, [val, id], (err, rows)=>{
-						if(err) {
-							console.log(err);
-							res(false);
-						} else {
-							res(true);
-						}
-					});
-					break;
-				case 'icon':
-					bot.db.query(`UPDATE servers SET pic_url=? WHERE server_id=?`, [val, id], (err, rows)=>{
-						if(err) {
-							console.log(err);
-							res(false);
-						} else {
-							res(true);
-						}
-					});
-					break;
-				case 'invite':
-					bot.db.query(`UPDATE servers SET invite=? WHERE server_id=?`, [val, id], (err, rows)=>{
-						if(err) {
-							console.log(err);
-							res(false);
-						} else {
-							res(true);
-						}
-					});
-					break;
-			}
+			bot.db.query(`UPDATE servers SET ?=? WHERE host_id=? AND server_id=?`, [prop, val, host, id], (err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(false);
+				} else {
+					res(true);
+				}
+			});
 		})
 	},
-	deleteServer: async (bot, id) => {
+	deleteServer: async (bot, host, id) => {
 		return new Promise(res => {
 			bot.db.query('DELETE FROM servers WHERE id=?',[id],(err,rows)=>{
 				if(err) {
 					cosole.log(err);
 					res(false)
 				} else {
-					bot.db.query('DELETE FROM posts WHERE server_id=?',[id],(err,rows)=>{
+					bot.db.query('DELETE FROM posts WHERE host_id=? AND server_id=?',[host, id],(err,rows)=>{
 						if(err) {
 							cosole.log(err);
 							res(false)
@@ -138,10 +104,10 @@ module.exports = {
 			})
 		})
 	},
-	getAllPosts: async (bot) => {
+	getAllPosts: async (bot, host) => {
 		return new Promise(async res => {
 			var posts = [];
-			bot.db.query(`SELECT * FROM posts`, async (err, rows)=> {
+			bot.db.query(`SELECT * FROM posts WHERE host_id=?`,[host], async (err, rows)=> {
 				if(err) {
 					console.log(err);
 					res(undefined)
@@ -158,9 +124,9 @@ module.exports = {
 
 		})
 	},
-	getPosts: async (bot, id, chanid) => {
+	getPosts: async (bot, host, id, chanid) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM posts WHERE server_id=? AND channel_id=?`,[id, chanid], (err, rows)=> {
+			bot.db.query(`SELECT * FROM posts WHERE host_id=? AND server_id=? AND channel_id=?`,[host, id, chanid], (err, rows)=> {
 				if(err) {
 					console.log(err);
 					res(false);
@@ -170,15 +136,15 @@ module.exports = {
 			})
 		})
 	},
-	updatePosts: async (bot, id) => {
+	updatePosts: async (bot, host, id) => {
 		return new Promise(async res=> {
-			var guild = await bot.utils.getServer(bot, id)
+			var guild = await bot.utils.getServer(bot, host, id)
 			if(!guild) {
 				console.log('Guild not found')
 				res(false);
 				return;
 			}
-			bot.db.query(`SELECT * FROM posts WHERE server_id=?`,[guild.id], async (err, rows)=>{
+			bot.db.query(`SELECT * FROM posts WHERE host_id=? AND server_id=?`,[host, guild.id], async (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(false);
@@ -218,14 +184,14 @@ module.exports = {
 			})
 		})
 	},
-	deletePosts: async (bot, id) => {
+	deletePosts: async (bot, host, id) => {
 		return new Promise(async res=> {
-			var guild = await bot.utils.getServer(bot, id)
+			var guild = await bot.utils.getServer(bot, host, id)
 			if(!guild) {
 				console.log('Guild not found')
 				res(false);
 			}
-			bot.db.query(`SELECT * FROM posts WHERE server_id=?`,[guild.id], async (err, rows)=>{
+			bot.db.query(`SELECT * FROM posts WHERE host_id=? AND server_id=?`,[host, guild.id], async (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(false);

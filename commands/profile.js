@@ -3,7 +3,7 @@ module.exports = {
 	usage: ()=> [" [id] - Checks what servers a user owns or mods for"],
 	execute: async (bot, msg, args)=> {
 		var id = (msg.mentions.length > 0 ? msg.mentions[0].id : args[0])
-		var guilds = await bot.utils.getServersWithContact(bot, id);
+		var guilds = await bot.utils.getServersWithContact(bot, msg.guild.id, id);
 		if(guilds[0]) {
 			var member = await bot.getRESTUser(id);
 			msg.channel.createMessage({embed: {

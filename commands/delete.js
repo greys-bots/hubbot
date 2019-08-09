@@ -8,14 +8,14 @@ module.exports = {
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 
 		await Promise.all(guilds.map(async g => {
-			var guild = await bot.utils.getServer(bot, g);
+			var guild = await bot.utils.getServer(bot, msg.guild.id, g);
 			if(!guild) return msg.channel.createMessage('Server not found.');
-			var res = await bot.utils.deletePosts(bot, g);
+			var res = await bot.utils.deletePosts(bot, msg.guild.id, g);
 			if(!res) return msg.channel.createMessage('Something went wrong while deleting posts.');
 
 			var dat = await bot.utils.verifyUsers(bot, guild.contact_id.split(" "));
 
-			var res2 = await bot.utils.deleteServer(bot, guild.id);
+			var res2 = await bot.utils.deleteServer(bot, msg.guild.id, guild.id);
 			if(!res2) return msg.channel.createMessage('Something went wrong while deleting server.');
 			msg.channel.createMessage('Server deleted!');
 
@@ -25,7 +25,7 @@ module.exports = {
 			if(conf.reprole) {
 			if(!conf.reprole) return;
 				await Promise.all(dat.pass.map(async m => {
-					var mg = await bot.utils.getServersWithContact(bot, m);
+					var mg = await bot.utils.getServersWithContact(bot, msg.guild.id, m);
 					console.log(mg);
 					if(!mg || mg.length == 0) {
 						try {

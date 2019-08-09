@@ -2,7 +2,7 @@ module.exports = {
 	help: ()=> "Pings contacts of a server",
 	usage: ()=> [" [id] - Pings contacts of server with given ID"],
 	execute: async (bot, msg, args) => {
-		let guild = await bot.utils.getServer(bot, args[0]);
+		let guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage("That server does not exist.");
 
 		var dat = await bot.utils.verifyUsers(bot, guild.contact_id.split(" "));

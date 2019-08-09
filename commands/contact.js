@@ -6,7 +6,7 @@ module.exports = {
 				],
 	execute: async (bot, msg, args)=>{
 		if(!args[1]) return msg.channel.createMessage("Please provide a server ID and contact.");
-		let guild = await bot.utils.getServer(bot, args[0]);
+		let guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage("That server does not exist.");
 
 		var dat = await bot.utils.verifyUsers(bot, msg.mentions.length > 0 ? msg.mentions.map(m => m.id) : args.slice(1));
@@ -40,7 +40,7 @@ module.exports = {
 
 		if(guild.contact_id == "" || !guild.contact_id) return;
 		await Promise.all(guild.contact_id.split(" ").map(async m => {
-			var mg = await bot.utils.getServersWithContact(bot, m);
+			var mg = await bot.utils.getServersWithContact(bot, msg.guild.id, m);
 			console.log(m + "\n\n"+JSON.stringify(mg));
 			if(!(mg && mg.length > 0)) {
 				try {
@@ -61,7 +61,7 @@ module.exports.subcommands.add = {
 	usage: ()=> [" [servID] [usrID] [usrID]... - Adds contact(s) to the server."],
 	execute: async (bot, msg, args) => {
 		if(!args[1]) return msg.channel.createMessage("Please provide a server ID and contact.");
-		let guild = await bot.utils.getServer(bot, args[0]);
+		let guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage("That server does not exist.");
 
 		var dat = await bot.utils.verifyUsers(bot, msg.mentions.length > 0 ? msg.mentions.map(m => m.id) : args.slice(1));
@@ -101,7 +101,7 @@ module.exports.subcommands.remove = {
 	execute: async (bot, msg, args) => {
 		if(!args[1]) return msg.channel.createMessage("Please provide a server ID and contact.");
 		let memberid = (msg.mentions.length > 0 ? msg.mentions[0].id : args[1]);
-		let guild = await bot.utils.getServer(bot, args[0]);
+		let guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 
 		if(!guild) return msg.channel.createMessage("That server does not exist.");
 		bot.db.query(`UPDATE servers SET contact_id = ? WHERE server_id = ?`,[guild.contact_id.split(" ").filter(c => c!= memberid).join(" "), guild.server_id],(err,res)=>{

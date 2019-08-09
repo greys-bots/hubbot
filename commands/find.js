@@ -2,13 +2,14 @@ module.exports = {
 	help: ()=> "Finds all servers matching a certain name.",
 	usage: ()=> [" [name] - Finds every server that has the input in the name"],
 	execute: async (bot, msg, args)=>{
-		bot.db.query(`SELECT * FROM servers`,(err, rows)=>{
+		var name = args.join(" ").toLowerCase();
+		bot.db.query(`SELECT * FROM servers WHERE host_id=? AND name LIKE ?`,[msg.guild.id, "%"+name+"%"],(err, rows)=>{
 			if(err) {
 				console.log(err);
 				msg.channel.createMessage('There was an error!');
 			} else {
-				msg.channel.createMessage(rows.map(srv => {
-					return srv.name.toLowerCase().includes(args.join(" ").toLowerCase()) ? `${srv.name} (${srv.server_id})` : null}).filter(x => x!=null).join('\n') || "None!")
+				if(!rows[0]) msg.channel.createMessage("None!");
+				else msg.channel.createMessage(rows.map(srv => `${srv.name} (${srv.server_id})`).join('\n'))
 			}
 		})
 	},
