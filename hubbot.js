@@ -88,6 +88,15 @@ async function setup() {
 		`+'`delete`'+` 		INTEGER
 	)`)
 
+	bot.db.query(`CREATE TABLE IF NOT EXISTS starboard (
+		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id	BIGINT,
+		channel_id	BIGINT,
+		message_id 	BIGINT,
+		original_id BIGINT,
+		emoji 		TEXT
+	)`) //emoji is to keep track of posts from multiple boards
+
 	var files = fs.readdirSync("./commands");
 	await Promise.all(files.map(f => {
 		bot.commands[f.slice(0,-3)] = require("./commands/"+f);
@@ -293,8 +302,9 @@ bot.on("ready",()=>{
 
 bot.on("messageCreate",async (msg)=>{
 	if(msg.author.bot) return;
-	if(!msg.content.startsWith(bot.prefix)) return;
-	let args = msg.content.replace(bot.prefix, "").split(" ");
+	var prefix = new RegExp("^"+bot.prefix, "i");
+	if(!msg.content.toLowerCase().match(prefix)) return;
+	let args = msg.content.replace(prefix, "").split(" ");
 	let cmd = await bot.parseCommand(bot, msg, args);
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
 	console.log(cmd);
@@ -334,14 +344,23 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 
 	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
 	if(cfg && cfg.starboard && cfg.starboard.boards) {
-		var cf = cfg.starboard.boards.find(c => c.emoji == emoji.name || c.emoji == `:${emoji.name}:${emoji.id}`);
+		var em;
+		if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
+		else em = emoji.name; 
+		var cf = cfg.starboard.boards.find(c => c.emoji == em);
 		if(cf) {
-			var chan = cf.channel;
-			var member = msg.channel.guild.members.find(m => m.id == user);
+			var sbpost = await bot.utils.getStarPost(bot, msg.channel.guild.id, msg.id, em);
 			var message = await bot.getMessage(msg.channel.id, msg.id);
-			var tolerance = cf.tolerance ? cf.tolerance : (cfg.starboard.tolerance || 2);
-			if((member.permission.has("manageMessages") && cfg.starboard.override) || (message.reactions[emoji.name].count === tolerance)) {
-				bot.utils.starMessage(bot, message, chan)
+			if(!sbpost) {
+				console.log(em);
+				var chan = cf.channel;
+				var member = msg.channel.guild.members.find(m => m.id == user);
+				var tolerance = cf.tolerance ? cf.tolerance : (cfg.starboard.tolerance || 2);
+				if((member.permission.has("manageMessages") && cfg.starboard.override) || (message.reactions[em.replace(/^:/,"")].count === tolerance)) {
+					bot.utils.starMessage(bot, message, chan, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
+				}
+			} else {
+				await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
 			}
 		}
 	}
@@ -368,20 +387,29 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 bot.on("messageReactionRemove", async (msg, emoji, user)=>{
 	if(bot.user.id == user) return;
 
+	var em;
+	if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
+	else em = emoji.name;
+
 	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
-	if(!post) return;
-	var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
-	if(!role) return;
-	var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-	if(!rl) return;
-	try {
-		msg.channel.guild.removeMemberRole(user, rl.id);
-	} catch(e) {
-		console.log(e);
-		await bot.getDMChannel(user).then(ch => {
-			ch.createMessage(`Couldn't remove role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-		})
+	if(post) {
+		var role = post.roles.find(r => r.emoji == em);
+		if(!role) return;
+		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+		if(!rl) return;
+		try {
+			msg.channel.guild.removeMemberRole(user, rl.id);
+		} catch(e) {
+			console.log(e);
+			await bot.getDMChannel(user).then(ch => {
+				ch.createMessage(`Couldn't remove role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+			})
+		}
 	}
+
+	var message = await bot.getMessage(msg.channel.id, msg.id);
+	await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
+	
 });
 
 bot.on("messageDelete", async (msg) => {
