@@ -298,7 +298,8 @@ bot.on("messageCreate",async (msg)=>{
 	let args = msg.content.replace(bot.prefix, "").split(" ");
 	let cmd = await bot.parseCommand(bot, msg, args);
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
-	if(cmd) cmd[0].execute(bot, msg, cmd[1], cmd[0]);
+	if(cmd && (cmd.permissions && cmd.permissions.filter(p => msg.member.permission.has(p)).length == cmd.permissions.length))
+		cmd[0].execute(bot, msg, cmd[1], cmd[0]);
 	else msg.channel.createMessage("Command not found.");
 });
 
