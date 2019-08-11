@@ -85,7 +85,7 @@ async function setup() {
 		server_id 	BIGINT,
 		name 		TEXT,
 		actions 	TEXT,
-		delete 		INTEGER
+		`+'`delete`'+` 		INTEGER
 	)`)
 
 	var files = fs.readdirSync("./commands");
@@ -294,12 +294,18 @@ bot.on("ready",()=>{
 bot.on("messageCreate",async (msg)=>{
 	if(msg.author.bot) return;
 	if(!msg.content.startsWith(bot.prefix)) return;
-	if(!msg.member.permission.has('manageMessages')) return msg.channel.createMessage('You do not have permission to do this.');
 	let args = msg.content.replace(bot.prefix, "").split(" ");
 	let cmd = await bot.parseCommand(bot, msg, args);
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
-	if(cmd && (cmd.permissions && cmd.permissions.filter(p => msg.member.permission.has(p)).length == cmd.permissions.length))
-		cmd[0].execute(bot, msg, cmd[1], cmd[0]);
+	console.log(cmd);
+	if(cmd) {
+		if(!cmd.permissions || (cmd.permissions && cmd.permissions.filter(p => msg.member.permission.has(p)).length == cmd.permissions.length)) {
+			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
+		} else {
+			msg.channel.createMessage("You do do not have permission to do this.")
+		}
+		
+	}
 	else msg.channel.createMessage("Command not found.");
 });
 
