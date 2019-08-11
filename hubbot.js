@@ -16,6 +16,15 @@ bot.prefix		= process.env.PREFIX;
 
 bot.commands	= {};
 
+bot.customActions = [
+	{name: "member.hr", replace: "msg.member.hasRole"},
+	{name: "member.rr", replace: "await msg.member.removeRole"},
+	{name: "member.ar", replace: "await msg.member.addRole"},
+	{name: "rf\\(('.*')\\)", replace: "msg.guild.roles.find(r => r.name.toLowerCase() == $1.toLowerCase()).id", regex: true}
+]
+
+const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
 async function setup() {
 	bot.db.query(`CREATE TABLE IF NOT EXISTS servers(
 		id         	INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +96,12 @@ async function setup() {
 	})).then(()=> console.log("finished loading commands."));
 }
 
+bot.asyncForEach = async (arr, bot, msg, args, cb) => {
+	for (let i = 0; i < arr.length; i++) {
+	    await cb(bot, msg, args, arr[i], i, arr);
+	  }
+}
+
 bot.parseCommand = async function(bot, msg, args, command) {
 	return new Promise(async (res,rej)=>{
 		var commands;
@@ -120,7 +135,105 @@ bot.parseCommand = async function(bot, msg, args, command) {
 
 		res([cmd, args, name]);
 	})
-	
+}
+
+bot.parseCustomCommand = async function(bot, msg, args) {
+	return new Promise(async res => {
+		if(!args || !args[0]) return res(undefined);
+		var name = args.shift();
+		var cmd = await bot.utils.getCustomCommand(bot, msg.guild.id, name);
+		if(!cmd) return res(undefined);
+
+		cmd.newActions = [];
+
+		cmd.actions.forEach(action => {
+			switch(action.type) {
+				case "if":
+					var condition = action.condition;
+					var ac = action.action;
+					bot.customActions.forEach(ca => {
+						var n = ca.regex ? new RegExp(ca.name) : ca.name;
+						condition = condition.replace(n, ca.replace)
+						ac = ac.replace(n, ca.replace);
+					})
+					cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						`if(${condition}) ${ac};`
+					), action.success, action.fail]);
+					break;
+				case "if:else":
+					var condition = action.condition;
+					var tr = action.action[0];
+					var fls = action.action[1];
+					bot.customActions.forEach(ca => {
+						var n = ca.regex ? new RegExp(ca.name) : ca.name;
+						condition = condition.replace(n, ca.replace)
+						tr = tr.replace(n, ca.replace);
+						fls = fls.replace(n, ca.replace);
+					})
+
+					cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						`if(${condition}) ${tr};
+						 else ${fls}`
+					), action.success, action.fail]);
+					break;
+				case "rr":
+					var ac = action.action;
+					bot.customActions.forEach(ca => {
+						var n = ca.regex ? new RegExp(ca.name) : ca.name;
+						ac = ac.replace(n, ca.replace);
+					})
+					cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						`${ac}`
+					), action.success, action.fail]);
+					break;
+				case "ar":
+					var ac = action.action;
+					bot.customActions.forEach(ca => {
+						var n = ca.regex ? new RegExp(ca.name) : ca.name;
+						ac = ac.replace(n, ca.replace);
+					})
+					cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						`${ac}`
+					), action.success, action.fail]);
+					break;
+			}
+		})
+
+		cmd.execute = async (bot, msg, args, cmd) => {
+			let msgs = [];
+			await bot.asyncForEach(cmd.newActions, bot, msg, args, async (bot, msg, args, a) => {
+				console.log(a);
+				try {
+					await a[0].call(null, bot, msg, args);
+				} catch (e) {
+					if(e) console.log(e);
+					if(a[2]) return await channel.createMessage(a[2] +`\n${e.message}`).then(message => {msgs.push(message)})
+				}
+				console.log("did the thing")
+				if(a[1]) await msg.channel.createMessage(a[1]).then(message => {
+					msgs.push(message);
+				})
+			})
+			console.log("test");
+			if(cmd.delete) {
+				setTimeout(async ()=> {
+					await msg.delete();
+					console.log(msgs);
+					await Promise.all(msgs.map(async m => {
+						console.log(m);
+						await m.delete()
+						return new Promise(res => res(""))
+					}))
+				}, 2000)
+				
+			}
+
+			console.log(msgs);
+			
+		}
+
+		res([cmd, args, name])
+	})
 }
 
 bot.commands.help = {
@@ -183,7 +296,8 @@ bot.on("messageCreate",async (msg)=>{
 	if(!msg.member.permission.has('manageMessages')) return msg.channel.createMessage('You do not have permission to do this.');
 	let args = msg.content.replace(bot.prefix, "").split(" ");
 	let cmd = await bot.parseCommand(bot, msg, args);
-	if(cmd) cmd[0].execute(bot, msg, cmd[1]);
+	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
+	if(cmd) cmd[0].execute(bot, msg, cmd[1], cmd[0]);
 	else msg.channel.createMessage("Command not found.");
 });
 

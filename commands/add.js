@@ -13,7 +13,7 @@ module.exports = {
 			var exists = await bot.utils.getServer(bot, msg.guild.id, invite.guild.id);
 			console.log(exists);
 			if(exists) return msg.channel.createMessage("Server already exists!");
-			bot.db.query(`INSERT INTO servers (host_id,server_id, name, invite, pic_url) VALUES (?,?,?,?,?)`,[
+			bot.db.query(`INSERT INTO servers (host_id, server_id, name, invite, pic_url) VALUES (?,?,?,?,?)`,[
 				msg.guild.id,
 				invite.guild.id,
 				invite.guild.name, 

@@ -12,11 +12,20 @@ module.exports = {
 		msg.channel.createMessage({
 			embed: {
 				title: "Custom commands",
-				fields: []
+				description: cmds.map(c => c.name).join(" ")
 			}
 		})
 	},
+	subcommands: {},
 	alias: ["cc", "custom"],
 	guildOnly: true,
 	permissions: ["manageGuild"]
+}
+
+module.exports.subcommands.add = {
+	help: ()=> "WORK IN PROGRESS",
+	usage: ()=> ["WORK IN PROGRESS"],
+	execute: async (bot, msg, args) => {
+		msg.channel.createMessage("This command is currently under construction. However, manual database editing can be used to create custom commands. USE WITH EXTREME CAUTION.")
+	}
 }

@@ -265,6 +265,37 @@ module.exports = {
 			})
 		})
 	},
+	getCustomCommands: async (bot, id) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM commands WHERE server_id=?`,[id],(err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows);
+				}
+			})
+		})
+	},
+	getCustomCommand: async (bot, id, name) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM commands WHERE server_id=? AND name=?`,[id, name],
+				{
+					id: Number,
+					server_id: String,
+					name: String,
+					actions: JSON.parse,
+					delete: Number
+				}, (err, rows)=>{
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0]);
+				}
+			})
+		})
+	},
 	getReactionRoles: async (bot, id) => {
 		return new Promise(res => {
 			bot.db.query(`SELECT * FROM reactroles WHERE server_id=?`,[id],(err, rows)=>{
