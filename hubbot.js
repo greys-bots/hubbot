@@ -84,7 +84,8 @@ async function setup() {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		server_id 	BIGINT,
 		name 		TEXT,
-		actions 	TEXT
+		actions 	TEXT,
+		delete 		INTEGER
 	)`)
 
 	var files = fs.readdirSync("./commands");
