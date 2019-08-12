@@ -38,7 +38,8 @@ module.exports = {
 		}
 	},
 	alias: ['rr', 'reactroles', 'reactrole', 'reactionrole'],
-	subcommands: {}
+	subcommands: {},
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.add = {
@@ -65,7 +66,8 @@ module.exports.subcommands.add = {
 			}
 		})
 	},
-	alias: ['create', 'new']
+	alias: ['create', 'new'],
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.remove = {
@@ -84,7 +86,8 @@ module.exports.subcommands.remove = {
 			}
 		})
 	},
-	alias: ['delete']
+	alias: ['delete'],
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.post = {
@@ -133,7 +136,8 @@ module.exports.subcommands.post = {
 				}
 			})
 		}
-	}
+	},
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.bind = {
@@ -185,7 +189,8 @@ module.exports.subcommands.bind = {
 				}
 			})
 		}
-	}
+	},
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.update = {
@@ -247,7 +252,8 @@ module.exports.subcommands.update = {
 			})
 		}	
 
-	}
+	},
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.emoji = {
@@ -271,7 +277,8 @@ module.exports.subcommands.emoji = {
 				msg.channel.createMessage('Emoji changed!')
 			}
 		})
-	}
+	},
+	permissions: ["manageRoles"]
 }
 
 module.exports.subcommands.description = {
@@ -296,5 +303,6 @@ module.exports.subcommands.description = {
 			}
 		})
 	},
-	alias: ["describe", "desc"]
+	alias: ["describe", "desc"],
+	permissions: ["manageRoles"]
 }
