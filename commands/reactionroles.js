@@ -1,4 +1,3 @@
-//REACTION ROLES (currently mostly finished)
 
 module.exports = {
 	help: ()=> "Sets, views, or edits reaction roles for the server",

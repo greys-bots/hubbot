@@ -14,6 +14,8 @@ bot.CHARS = process.env.CHARS;
 
 bot.prefix		= process.env.PREFIX;
 
+bot.fetch = require('node-fetch');
+
 bot.commands	= {};
 
 bot.customActions = [
@@ -68,7 +70,8 @@ async function setup() {
     	server_id		BIGINT,
     	name 			TEXT,
     	description 	TEXT,
-    	roles 			TEXT
+    	roles 			TEXT,
+    	posts 			TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactposts (
@@ -76,7 +79,6 @@ async function setup() {
 		server_id	TEXT,
 		channel_id	TEXT,
 		message_id	TEXT,
-		category_id	TEXT,
 		roles		TEXT
 	)`);
 
