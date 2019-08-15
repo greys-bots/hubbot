@@ -29,6 +29,7 @@ module.exports = {
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		if(!conf) return;
 		if(!conf.reprole) return;
+		console.log(conf.reprole)
 		await Promise.all(dat.pass.map(async m => {
 			try {
 				await msg.guild.addMemberRole(m, conf.reprole)

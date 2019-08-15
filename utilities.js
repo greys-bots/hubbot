@@ -229,10 +229,10 @@ module.exports = {
 		return new Promise(res=>{
 			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[id], {
 				id: Number,
-		        server_id: Number,
-		        banlog_channel: Number,
-		        reprole: Number,
-		        delist_channel: Number,
+		        server_id: String,
+		        banlog_channel: String,
+		        reprole: String,
+		        delist_channel: String,
 		        starboard: JSON.parse
 			}, (err,rows)=>{
 				if(err) {
