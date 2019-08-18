@@ -13,5 +13,6 @@ module.exports = {
 			}
 		})
 	},
-	alias: ['servers', 'server']
+	alias: ['servers', 'server'],
+	permissions: ["manageMessages"]
 }

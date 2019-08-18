@@ -17,5 +17,6 @@ module.exports = {
 		} else {
 			msg.channel.createMessage('Something went wrong')
 		}
-	}
+	},
+	permissions: ["manageMessages"]
 }

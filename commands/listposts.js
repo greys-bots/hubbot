@@ -43,5 +43,6 @@ module.exports = {
 			msg.channel.createMessage('None!');
 		}
 	},
-	alias: ['lp']
+	alias: ['lp'],
+	permissions: ["manageMessages"]
 }

@@ -21,7 +21,6 @@ module.exports = {
 	subcommands: {},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["pinboard", "pb", "sb"]
 }
 
@@ -70,7 +69,6 @@ module.exports.subcommands.add = {
 	},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["a","new"]
 }
 
@@ -106,7 +104,6 @@ module.exports.subcommands.remove = {
 	},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["r","delete"]
 }
 
@@ -141,7 +138,6 @@ module.exports.subcommands.pin = {
 	},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["pins","process"]
 }
 
@@ -187,7 +183,6 @@ module.exports.subcommands.view = {
 	},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["list","v","l"]
 }
 
@@ -211,7 +206,6 @@ module.exports.subcommands.config = {
 	subcommands: {},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["cfg"]
 }
 
@@ -294,7 +288,6 @@ module.exports.subcommands.tolerance = {
 	},
 	permissions: ["manageGuild"],
 	guildOnly: true,
-	module: "admin",
 	alias: ["tol"]
 }
 
@@ -318,5 +311,7 @@ module.exports.subcommands.override = {
 		if(sc) msg.channel.createMessage("Override set")
 		else msg.channel.createMessage("Something went wrong")
 
-	}
+	},
+	permissions: ["manageGuild"],
+	guildOnly: true
 }

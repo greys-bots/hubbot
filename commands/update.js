@@ -28,5 +28,6 @@ module.exports = {
 			console.log(e);
 			msg.channel.createMessage("That invite is not valid or there was an error.")
 		});
-	}
+	},
+	permissions: ["manageMessages"]
 }

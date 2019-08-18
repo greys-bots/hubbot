@@ -54,7 +54,8 @@ module.exports = {
 		}))
 	},
 	subcommands: {},
-	alias: ["con","c"]
+	alias: ["con","c"],
+	permissions: ["manageMessages"]
 }
 
 module.exports.subcommands.add = {
@@ -93,7 +94,8 @@ module.exports.subcommands.add = {
 				console.log(e);
 			}
 		}))
-	}
+	},
+	permissions: ["manageMessages"]
 }
 
 module.exports.subcommands.remove = {
@@ -136,5 +138,6 @@ module.exports.subcommands.remove = {
 		if(!res2) {
 			msg.channel.createMessage('Something went wrong while updating post')
 		}
-	}
+	},
+	permissions: ["manageMessages"]
 }

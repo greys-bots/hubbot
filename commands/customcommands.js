@@ -27,5 +27,6 @@ module.exports.subcommands.add = {
 	usage: ()=> ["WORK IN PROGRESS"],
 	execute: async (bot, msg, args) => {
 		msg.channel.createMessage("This command is currently under construction. However, manual database editing can be used to create custom commands. USE WITH EXTREME CAUTION.")
-	}
+	},
+	permissions: ["manageGuild"]
 }

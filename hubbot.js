@@ -311,7 +311,8 @@ bot.on("messageCreate",async (msg)=>{
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
 	console.log(cmd);
 	if(cmd) {
-		if(!cmd.permissions || (cmd.permissions && cmd.permissions.filter(p => msg.member.permission.has(p)).length == cmd.permissions.length)) {
+		if(!cmd[0].permissions || (cmd[0].permissions && cmd[0].permissions.filter(p => msg.member.permission.has(p)).length == cmd[0].permissions.length)) {
+			console.log(cmd[0].permissions.filter(p => msg.member.permission.has(p)).length + " - " + cmd[0].permissions.length)
 			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
 		} else {
 			msg.channel.createMessage("You do do not have permission to do this.")

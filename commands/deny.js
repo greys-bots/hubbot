@@ -19,5 +19,6 @@ module.exports = {
 			},
 			timestamp: new Date()
 		}})
-	}
+	},
+	permissions: ["manageMessages"]
 }

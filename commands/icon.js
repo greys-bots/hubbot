@@ -17,5 +17,6 @@ module.exports = {
 			msg.channel.createMessage('Something went wrong')
 		}
 	},
-	alias: ['pic', 'avatar', 'image', 'img', 'picture']
+	alias: ['pic', 'avatar', 'image', 'img', 'picture'],
+	permissions: ["manageMessages"]
 }

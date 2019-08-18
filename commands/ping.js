@@ -7,5 +7,6 @@ module.exports = {
 
 		var dat = await bot.utils.verifyUsers(bot, guild.contact_id.split(" "));
 		msg.channel.createMessage('Ping! '+dat.info.map(m => m.mention).join(" "));
-	}
+	},
+	permissions: ["manageMessages"]
 }

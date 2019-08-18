@@ -37,5 +37,6 @@ module.exports = {
 			])
 		})
 
-	}
+	},
+	permissions: ["manageMessages"]
 }

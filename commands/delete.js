@@ -59,5 +59,6 @@ module.exports = {
 		}
 		
 	},
-	alias: ['delist']
+	alias: ['delist'],
+	permissions: ["manageMessages"]
 }

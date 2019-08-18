@@ -28,5 +28,6 @@ module.exports = {
 			console.log(e);
 			msg.channel.createMessage('Something went wrong')
 		})
-	}
+	},
+	permissions: ["manageMessages"]
 }

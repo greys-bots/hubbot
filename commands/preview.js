@@ -25,5 +25,6 @@ module.exports = {
 				text: `ID: ${guild.server_id}`
 			}
 		}})
-	}
+	},
+	permissions: ["manageMessages"]
 }

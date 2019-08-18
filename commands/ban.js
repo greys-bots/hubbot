@@ -83,5 +83,6 @@ module.exports = {
 
 			channel.createMessage(message)
 		});
-	}
+	},
+	permissions: ["manageMessages"]
 }

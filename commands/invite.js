@@ -18,5 +18,6 @@ module.exports = {
 			msg.channel.createMessage('Something went wrong')
 		}
 	},
-	alias: ['link']
+	alias: ['link'],
+	permissions: ["manageMessages"]
 }

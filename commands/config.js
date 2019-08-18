@@ -41,7 +41,8 @@ module.exports = {
 		msg.channel.createMessage(`Current configs:\n`+textconf);
 	},
 	alias: ['conf'],
-	subcommands: {}
+	subcommands: {},
+	permissions: ["manageMessages"]
 }
 
 module.exports.subcommands.banlog = {
@@ -78,7 +79,8 @@ module.exports.subcommands.banlog = {
 			})
 		}
 	},
-	alias: ['banchannel', "banlogs", "banlogchannel"]
+	alias: ['banchannel', "banlogs", "banlogchannel"],
+	permissions: ["manageMessages"]
 }
 
 module.exports.subcommands.reprole = {
@@ -114,7 +116,8 @@ module.exports.subcommands.reprole = {
 				}
 			})
 		}
-	}
+	},
+	permissions: ["manageMessages"]
 }
 
 module.exports.subcommands.delist = {
@@ -151,5 +154,6 @@ module.exports.subcommands.delist = {
 			})
 		}
 	},
-	alias: ['delistchannel', "delete", "delisting", "deletechannel", "denychannel", "deny"]
+	alias: ['delistchannel', "delete", "delisting", "deletechannel", "denychannel", "deny"],
+	permissions: ["manageMessages"]
 }
