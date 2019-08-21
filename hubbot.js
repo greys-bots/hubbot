@@ -411,9 +411,18 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 			}
 		}
 	}
-
-
 });
+
+bot.on("messageReactionRemove", async (msg, emoji, user) => {
+	if(bot.user.id == user) return;
+
+	var em;
+	if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
+	else em = emoji.name;
+
+	var message = await bot.getMessage(msg.channel.id, msg.id);
+	await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
+})
 
 bot.on("messageDelete", async (msg) => {
 	bot.db.query(`DELETE FROM reactposts WHERE server_id=? AND channel_id=? AND message_id=?`,[msg.channel.guild.id, msg.channel.id, msg.id]);
