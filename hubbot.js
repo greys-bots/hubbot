@@ -312,7 +312,6 @@ bot.on("messageCreate",async (msg)=>{
 	console.log(cmd);
 	if(cmd) {
 		if(!cmd[0].permissions || (cmd[0].permissions && cmd[0].permissions.filter(p => msg.member.permission.has(p)).length == cmd[0].permissions.length)) {
-			console.log(cmd[0].permissions.filter(p => msg.member.permission.has(p)).length + " - " + cmd[0].permissions.length)
 			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
 		} else {
 			msg.channel.createMessage("You do do not have permission to do this.")
@@ -332,6 +331,12 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 				bot.pages[msg.id].index -= 1;
 			}
 			bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
+			try {
+				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
+			} catch(e) {
+				console.log(e);
+				msg.channel.createMessage("I can't remove reactions :(");
+			}
 		} else if(emoji.name == "\u27a1") {
 			if(bot.pages[msg.id].index == bot.pages[msg.id].data.length-1) {
 				bot.pages[msg.id].index = 0;
@@ -339,10 +344,17 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 				bot.pages[msg.id].index += 1;
 			}
 			bot.editMessage(msg.channel.id, msg.id, bot.pages[msg.id].data[bot.pages[msg.id].index]);
+			try {
+				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
+			} catch(e) {
+				console.log(e);
+				msg.channel.createMessage("I can't remove reactions :(");
+			}
 		} else if(emoji.name == "\u23f9") {
 			bot.deleteMessage(msg.channel.id, msg.id);
 			delete bot.pages[msg.id];
 		}
+
 	}
 
 	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
@@ -369,50 +381,38 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 	}
 
 	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
-	if(post) {
-		var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
-		if(!role) return;
-		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-		if(!rl) return;
-		try {
-			msg.channel.guild.addMemberRole(user, rl.id);
-		} catch(e) {
-			console.log(e);
-			await bot.getDMChannel(user).then(ch => {
-				ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-			})
-		}
-	}
-
-
-});
-
-bot.on("messageReactionRemove", async (msg, emoji, user)=>{
-	if(bot.user.id == user) return;
-
-	var em;
-	if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
-	else em = emoji.name;
-
-	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
-	if(post) {
-		var role = post.roles.find(r => r.emoji == em);
-		if(!role) return;
-		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-		if(!rl) return;
-		try {
-			msg.channel.guild.removeMemberRole(user, rl.id);
-		} catch(e) {
-			console.log(e);
-			await bot.getDMChannel(user).then(ch => {
-				ch.createMessage(`Couldn't remove role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-			})
-		}
-	}
-
 	var message = await bot.getMessage(msg.channel.id, msg.id);
-	await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
-	
+	if(post) {
+		var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` || r.emoji == `a:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
+		if(!role) return;
+		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
+		if(!rl) return;
+		var member = msg.channel.guild.members.find(m => m.id == user);
+		if(!member) return;
+		if(member.roles.includes(rl.id)) {
+			try {
+				msg.channel.guild.removeMemberRole(user, rl.id);
+				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
+			} catch(e) {
+				console.log(e);
+				await bot.getDMChannel(user).then(ch => {
+					ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+				})
+			}
+		} else {
+			try {
+				msg.channel.guild.addMemberRole(user, rl.id);
+				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
+			} catch(e) {
+				console.log(e);
+				await bot.getDMChannel(user).then(ch => {
+					ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
+				})
+			}
+		}
+	}
+
+
 });
 
 bot.on("messageDelete", async (msg) => {
