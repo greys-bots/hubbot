@@ -73,7 +73,10 @@ module.exports = {
 						value: reason || "(no reason given)"
 					}
 					],
-					timestamp: new Date()
+					timestamp: new Date(),
+					thumbnail: {
+						url: "https://cdn.discordapp.com/attachments/577309619316195338/619375530076143627/HubOK.png"
+					}
 				}}
 			}
 			if(conf && conf.banlog_channel && msg.guild.channels.find(ch => ch.id == conf.banlog_channel) && !message.content)
