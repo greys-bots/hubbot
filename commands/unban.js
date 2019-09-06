@@ -58,7 +58,7 @@ module.exports = {
 				}};
 			} else {
 				message = {embed: {
-					title: "Members Unbanned",
+					title: "Unbanned Members",
 					fields: [
 					{
 						name: "**__Last Known Usernames__**",
