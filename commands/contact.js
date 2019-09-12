@@ -21,7 +21,7 @@ module.exports = {
 			}
 		})
 
-		var res2 = await bot.utils.updatePosts(bot, args[0]);
+		var res2 = await bot.utils.updatePosts(bot, msg.guild.id, args[0]);
 		if(!res2) {
 			msg.channel.createMessage('Something went wrong while updating post')
 		}
@@ -78,7 +78,7 @@ module.exports.subcommands.add = {
 			}
 		})
 
-		var res2 = await bot.utils.updatePosts(bot, args[0]);
+		var res2 = await bot.utils.updatePosts(bot, msg.guild.id, args[0]);
 		if(!res2) {
 			msg.channel.createMessage('Something went wrong while updating post')
 		}
@@ -134,7 +134,7 @@ module.exports.subcommands.remove = {
 			}
 		})
 
-		var res2 = await bot.utils.updatePosts(bot, args[0]);
+		var res2 = await bot.utils.updatePosts(bot, msg.guild.id, args[0]);
 		if(!res2) {
 			msg.channel.createMessage('Something went wrong while updating post')
 		}
