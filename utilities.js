@@ -77,6 +77,18 @@ module.exports = {
 		}
 		return codestring;
 	},
+	getServers: async (bot, host) => {
+		return new Promise((res)=>{
+			bot.db.query(`SELECT * FROM servers WHERE host_id=?`,[host],(err,rows)=>{
+				if(err) {
+						console.log(err);
+						res(undefined)
+					} else {
+						res(rows);
+					}
+			})
+		})
+	},
 	getServer: async (bot, host, id) => {
 		return new Promise((res)=>{
 			bot.db.query(`SELECT * FROM servers WHERE host_id=? AND server_id=?`,[host, id],(err,rows)=>{

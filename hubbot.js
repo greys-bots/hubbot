@@ -30,7 +30,7 @@ const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 async function setup() {
 	bot.db.query(`CREATE TABLE IF NOT EXISTS servers(
 		id         	INTEGER PRIMARY KEY AUTOINCREMENT,
-		host_id 	BIGINT
+		host_id 	BIGINT,
         server_id   BIGINT,
         contact_id  TEXT,
         name        TEXT,
