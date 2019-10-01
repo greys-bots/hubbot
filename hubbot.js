@@ -53,7 +53,8 @@ async function setup() {
         banlog_channel	BIGINT,
         reprole 		BIGINT,
         delist_channel	BIGINT,
-        starboard 		TEXT
+        starboard 		TEXT,
+        blacklist 		TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactroles (
@@ -304,6 +305,7 @@ bot.on("ready",()=>{
 
 bot.on("messageCreate",async (msg)=>{
 	if(msg.author.bot) return;
+	if(!msg.guild) return msg.channel.createMessage("This bot should be used in guilds only");
 	var prefix = new RegExp("^"+bot.prefix, "i");
 	if(!msg.content.toLowerCase().match(prefix)) return;
 	let args = msg.content.replace(prefix, "").split(" ");
@@ -311,6 +313,8 @@ bot.on("messageCreate",async (msg)=>{
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
 	console.log(cmd);
 	if(cmd) {
+		var cfg = await bot.utils.getConfig(bot, msg.guild.id);
+		if(cfg && cfg.blacklist && cfg.blacklist.includes(msg.author.id)) return msg.channel.createMessage("You have been banned from using this bot.");
 		if(!cmd[0].permissions || (cmd[0].permissions && cmd[0].permissions.filter(p => msg.member.permission.has(p)).length == cmd[0].permissions.length)) {
 			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
 		} else {
@@ -323,6 +327,7 @@ bot.on("messageCreate",async (msg)=>{
 
 bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 	if(bot.user.id == user) return;
+	if(!msg.channel.guild) return;
 	if(bot.pages && bot.pages[msg.id] && bot.pages[msg.id].user == user) {
 		if(emoji.name == "\u2b05") {
 			if(bot.pages[msg.id].index == 0) {
@@ -358,6 +363,7 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 	}
 
 	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
+	if(cfg && cfg.blacklist && cfg.blacklist.includes(user)) return;
 	if(cfg && cfg.starboard && cfg.starboard.boards) {
 		var em;
 		if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
@@ -415,6 +421,9 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 
 bot.on("messageReactionRemove", async (msg, emoji, user) => {
 	if(bot.user.id == user) return;
+
+	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
+	if(cfg && cfg.blacklist && cfg.blacklist.includes(user)) return;
 
 	var em;
 	if(emoji.id) em = `:${emoji.name}:${emoji.id}`;

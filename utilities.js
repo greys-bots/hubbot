@@ -273,7 +273,8 @@ module.exports = {
 		        banlog_channel: String,
 		        reprole: String,
 		        delist_channel: String,
-		        starboard: JSON.parse
+		        starboard: JSON.parse,
+		        blacklist: JSON.parse
 			}, (err,rows)=>{
 				if(err) {
 					console.log(err);
@@ -291,7 +292,7 @@ module.exports = {
 					console.log(err);
 				} else {
 					if(!rows[0]) {
-						bot.db.query(`INSERT INTO configs (server_id, banlog_channel, reprole, delist_channel, starboard) VALUES (?,?,?,?,?)`,[srv, "", "", "", {}]);
+						bot.db.query(`INSERT INTO configs (server_id, banlog_channel, reprole, delist_channel, starboard, blacklist) VALUES (?,?,?,?,?,?)`,[srv, "", "", "", {}, []]);
 					}
 				}
 			})
@@ -668,7 +669,8 @@ module.exports = {
 					var post = rows[0];
 					if(!post) return res(true);
 					try {
-						bot.editMessage(post.channel_id, post.message_id, `${data.emoji.includes(":") ? `<${data.emoji}>` : data.emoji} ${data.count}`)
+						if(data.count > 0) bot.editMessage(post.channel_id, post.message_id, `${data.emoji.includes(":") ? `<${data.emoji}>` : data.emoji} ${data.count}`);
+						else bot.deleteMessage(post.channel_id, post.message_id);
 					} catch(e) {
 						console.log(e);
 						return res(false);
