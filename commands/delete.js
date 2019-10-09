@@ -1,6 +1,6 @@
 module.exports = {
-	help: ()=> "Deletes a server",
-	usage: ()=> [" [serverID] [reason] - Deletes given server and all posts about it."],
+	help: ()=> "Deletes server(s)",
+	usage: ()=> [" [serverID] [serverID...] (new line) [reason] - Deletes given server(s) and all posts related."],
 	execute: async (bot, msg, args) => {
 		var guilds = args.join(" ").split("\n")[0].split(" ");
 		var embeds = [];

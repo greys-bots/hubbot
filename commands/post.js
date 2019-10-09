@@ -1,6 +1,6 @@
 module.exports = {
 	help: ()=> "Posts server embed in a given channel",
-	usage: ()=> [' [channel] - Posts server in channel (NOTE: can be channel ID, name, or #mention)'],
+	usage: ()=> [' [serverID] [channel] - Posts server in channel (NOTE: can be channel ID, name, or #mention)'],
 	execute: async (bot, msg, args)=> {
 		var guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage('Server not found.');
