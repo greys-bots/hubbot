@@ -320,7 +320,14 @@ module.exports = {
 	},
 	getCustomCommands: async (bot, id) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM commands WHERE server_id=?`,[id],(err, rows)=>{
+			bot.db.query(`SELECT * FROM commands WHERE server_id=?`,[id],
+				{
+					id: Number,
+					server_id: String,
+					name: String,
+					actions: JSON.parse,
+					del: Number
+				}, (err, rows)=>{
 				if(err) {
 					console.log(err);
 					res(undefined);
@@ -338,7 +345,7 @@ module.exports = {
 					server_id: String,
 					name: String,
 					actions: JSON.parse,
-					delete: Number
+					del: Number
 				}, (err, rows)=>{
 				if(err) {
 					console.log(err);
@@ -346,6 +353,16 @@ module.exports = {
 				} else {
 					res(rows[0]);
 				}
+			})
+		})
+	},
+	addCustomCommand: async (bot, server, name, actions, del) => {
+		return new Promise(res => {
+			bot.db.query(`INSERT INTO commands (server_id, name, actions, del) VALUES (?,?,?,?)`,[server, name, actions, del], (err, rows) => {
+				if(err) {
+					console.log(err);
+					res(false);
+				} else res(true);
 			})
 		})
 	},

@@ -88,7 +88,7 @@ async function setup() {
 		server_id 	BIGINT,
 		name 		TEXT,
 		actions 	TEXT,
-		`+'`delete`'+` 		INTEGER
+		del 		INTEGER
 	)`)
 
 	bot.db.query(`CREATE TABLE IF NOT EXISTS starboard (
@@ -243,7 +243,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 				})
 			})
 			console.log("test");
-			if(cmd.delete) {
+			if(cmd.del) {
 				setTimeout(async ()=> {
 					await msg.delete();
 					console.log(msgs);
