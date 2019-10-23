@@ -368,6 +368,16 @@ module.exports = {
 			})
 		})
 	},
+	deleteCustomCommand: async (bot, server, name) => {
+		return new Promise(res => {
+			bot.db.query(`DELETE FROM commands WHERE server_id=? AND name=?`,[server, name], (err, rows) => {
+				if(err) {
+					console.log(err);
+					res(false);
+				} else res(true);
+			})
+		})
+	},
 	getReactionRoles: async (bot, id) => {
 		return new Promise(res => {
 			bot.db.query(`SELECT * FROM reactroles WHERE server_id=?`,[id],(err, rows)=>{
