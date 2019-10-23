@@ -326,6 +326,7 @@ module.exports = {
 					server_id: String,
 					name: String,
 					actions: JSON.parse,
+					target: String,
 					del: Number
 				}, (err, rows)=>{
 				if(err) {
@@ -345,6 +346,7 @@ module.exports = {
 					server_id: String,
 					name: String,
 					actions: JSON.parse,
+					target: String,
 					del: Number
 				}, (err, rows)=>{
 				if(err) {
@@ -356,9 +358,9 @@ module.exports = {
 			})
 		})
 	},
-	addCustomCommand: async (bot, server, name, actions, del) => {
+	addCustomCommand: async (bot, server, name, actions, target, del) => {
 		return new Promise(res => {
-			bot.db.query(`INSERT INTO commands (server_id, name, actions, del) VALUES (?,?,?,?)`,[server, name, actions, del], (err, rows) => {
+			bot.db.query(`INSERT INTO commands (server_id, name, actions, target, del) VALUES (?,?,?,?,?)`,[server, name, actions, target, del], (err, rows) => {
 				if(err) {
 					console.log(err);
 					res(false);
