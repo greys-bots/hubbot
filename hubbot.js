@@ -91,6 +91,7 @@ async function setup() {
 		server_id 	BIGINT,
 		name 		TEXT,
 		actions 	TEXT,
+		target 		TEXT,
 		del 		INTEGER
 	)`)
 
