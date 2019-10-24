@@ -7,7 +7,7 @@ module.exports = {
 				 " remove [ID] [role] - Removes react role from the category",
 				 " name [ID] [new name] - Changes category name",
 				 " description [ID] [new desription] - Changes category description",
-				 " post [channel] <ID> - Posts category's roles in a channel. If no category is given, posts all",
+				 " post [category] [channel] - Posts category's roles in a channel",
 				 " info [ID] - Gets info on a category (eg: roles registered to it)"],
 	execute: async (bot, msg, args)=> {
 		var categories = await bot.utils.getReactionCategories(bot, msg.guild.id);
@@ -66,7 +66,7 @@ module.exports.subcommands.delete = {
 
 module.exports.subcommands.name = {
 	help: ()=> "Changes name for a category",
-	usage: ()=> " [ID] [name] - Changes name for the given category",
+	usage: ()=> [" [ID] [name] - Changes name for the given category"],
 	execute: async (bot, msg, args)=> {
 		var category = bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category)
@@ -87,7 +87,7 @@ module.exports.subcommands.name = {
 
 module.exports.subcommands.description = {
 	help: ()=> "Changes description for a category",
-	usage: ()=> " [ID] [description] - Changes description for the given category",
+	usage: ()=> [" [ID] [description] - Changes description for the given category"],
 	execute: async (bot, msg, args)=> {
 		var category = bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category)
@@ -108,7 +108,7 @@ module.exports.subcommands.description = {
 
 module.exports.subcommands.add = {
 	help: ()=> "Changes description for a category",
-	usage: ()=> " [ID] [comma, separated, role names] - Adds role to a category",
+	usage: ()=> [" [ID] [comma, separated, role names] - Adds role to a category"],
 	execute: async (bot, msg, args)=> {
 		var category = await bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category)
@@ -180,7 +180,7 @@ module.exports.subcommands.add = {
 
 module.exports.subcommands.remove = {
 	help: ()=> "Changes description for a category",
-	usage: ()=> " [ID] [role] - Adds role to a category",
+	usage: ()=> [" [ID] [role] - Adds role to a category"],
 	execute: async (bot, msg, args)=> {
 		var category = await bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category)
@@ -236,14 +236,14 @@ module.exports.subcommands.remove = {
 
 module.exports.subcommands.post = {
 	help: ()=> "Posts a message with all possible reaction roles",
-	usage: ()=> " [category] [channel] - Posts reaction roles message in given channel",
+	usage: ()=> [" [category] [channel] - Posts reaction roles message in given channel"],
 	execute: async (bot, msg, args) => {
 		var category = await bot.utils.getReactionCategory(bot, msg.guild.id, args[0]);
 		if(!category) return msg.channel.createMessage('Category does not exist');
 
 		var channel = msg.channelMentions.length > 0 ?
-				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[1]) :
-				   msg.guild.channels.find(ch => ch.id == args[0] || ch.name == args[1]);
+				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
+				   msg.guild.channels.find(ch => ch.id == args[1] || ch.name == args[1]);
 		if(!channel) return msg.channel.createMessage('Channel not found');
 
 		var roles = await bot.utils.getReactionRolesByCategory(bot, msg.guild.id, category.hid);
