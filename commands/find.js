@@ -14,5 +14,6 @@ module.exports = {
 		})
 	},
 	alias: ['servers', 'server'],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

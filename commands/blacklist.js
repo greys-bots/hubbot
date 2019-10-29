@@ -53,7 +53,8 @@ module.exports = {
 		}
 	},
 	permissions: ["manageMessages"],
-	subcommands: {}
+	subcommands: {},
+	guildOnly: true
 }
 
 module.exports.subcommands.add = {
@@ -82,7 +83,8 @@ module.exports.subcommands.add = {
 			}})
 		} else return msg.channel.createMessage(`User${ids.length > 0 ? "s" : ""} provided are invalid`);
 
-	}
+	},
+	guildOnly: true
 }
 
 module.exports.subcommands.remove = {
@@ -98,5 +100,6 @@ module.exports.subcommands.remove = {
 		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "blacklist", cfg.blacklist.filter(x => !ids.includes(x)));
 		if(!scc) msg.channel.createMessage("Something went wrong");
 		else msg.channel.createMessage("Users removed from blacklist");
-	}
+	},
+	guildOnly: true
 }

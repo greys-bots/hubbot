@@ -20,5 +20,6 @@ module.exports = {
 			timestamp: new Date()
 		}})
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

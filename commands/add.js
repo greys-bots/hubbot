@@ -27,5 +27,6 @@ module.exports = {
 			msg.channel.createMessage("That invite is not valid.")
 		});
 	},
-	permissions: ["manageMessages"] //so basic mods can help
+	permissions: ["manageMessages"], //so basic mods can help
+	guildOnly: true
 }

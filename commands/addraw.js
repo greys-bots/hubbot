@@ -14,5 +14,6 @@ module.exports = {
 
 		msg.channel.createMessage(`Server added! ID: ${args[0]}`);
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

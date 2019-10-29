@@ -81,7 +81,8 @@ module.exports = {
 	},
 	alias: ['rr', 'reactroles', 'reactrole', 'reactionrole'],
 	subcommands: {},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.add = {
@@ -111,7 +112,8 @@ module.exports.subcommands.add = {
 		})
 	},
 	alias: ['create', 'new'],
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.remove = {
@@ -132,7 +134,8 @@ module.exports.subcommands.remove = {
 		})
 	},
 	alias: ['delete'],
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.bind = {
@@ -192,7 +195,8 @@ module.exports.subcommands.bind = {
 			})
 		}
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.emoji = {
@@ -217,7 +221,8 @@ module.exports.subcommands.emoji = {
 			}
 		})
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.description = {
@@ -243,5 +248,6 @@ module.exports.subcommands.description = {
 		})
 	},
 	alias: ["describe", "desc"],
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }

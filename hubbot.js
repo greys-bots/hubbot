@@ -59,7 +59,8 @@ async function setup() {
         reprole 		BIGINT,
         delist_channel	BIGINT,
         starboard 		TEXT,
-        blacklist 		TEXT
+        blacklist 		TEXT,
+        feedback 		TEXT
     )`);
 
     bot.db.query(`CREATE TABLE IF NOT EXISTS reactroles (
@@ -121,6 +122,15 @@ async function setup() {
 		message		TEXT
 	)`)
 
+	bot.db.query(`CREATE TABLE IF NOT EXISTS feedback (
+		id			INTEGER PRIMARY KEY AUTOINCREMENT,
+		hid			TEXT,
+		server_id	TEXT,
+		sender_id 	TEXT,
+		message 	TEXT,
+		anon 		INTEGER
+	)`);
+
 	var files = fs.readdirSync("./commands");
 	await Promise.all(files.map(f => {
 		bot.commands[f.slice(0,-3)] = require("./commands/"+f);
@@ -174,6 +184,7 @@ bot.parseCommand = async function(bot, msg, args, command) {
 bot.parseCustomCommand = async function(bot, msg, args) {
 	return new Promise(async res => {
 		if(!args || !args[0]) return res(undefined);
+		if(!msg.guild) return res(undefined);
 		var name = args.shift();
 		var cmd = await bot.utils.getCustomCommand(bot, msg.guild.id, name);
 		if(!cmd) return res(undefined);
@@ -403,7 +414,7 @@ bot.on("ready",()=>{
 
 bot.on("messageCreate",async (msg)=>{
 	if(msg.author.bot) return;
-	if(!msg.guild) return msg.channel.createMessage("This bot should be used in guilds only");
+	// if(!msg.guild) return msg.channel.createMessage("This bot should be used in guilds only");
 	var prefix = new RegExp("^"+bot.prefix, "i");
 	if(!msg.content.toLowerCase().match(prefix)) return;
 	let args = msg.content.replace(prefix, "").split(" ");
@@ -411,10 +422,11 @@ bot.on("messageCreate",async (msg)=>{
 	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
 	console.log(cmd);
 	if(cmd) {
-		var cfg = await bot.utils.getConfig(bot, msg.guild.id);
+
+		var cfg = msg.guild ? await bot.utils.getConfig(bot, msg.guild.id) : {};
 		if(cfg && cfg.blacklist && cfg.blacklist.includes(msg.author.id)) return msg.channel.createMessage("You have been banned from using this bot.");
 		if(!cmd[0].permissions || (cmd[0].permissions && cmd[0].permissions.filter(p => msg.member.permission.has(p)).length == cmd[0].permissions.length)) {
-			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
+			cmd[0].execute(bot, msg, cmd[1], cfg);
 		} else {
 			msg.channel.createMessage("You do do not have permission to do this.")
 		}

@@ -18,5 +18,6 @@ module.exports = {
 			msg.channel.createMessage('Something went wrong')
 		}
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

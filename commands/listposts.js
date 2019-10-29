@@ -44,5 +44,6 @@ module.exports = {
 		}
 	},
 	alias: ['lp'],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

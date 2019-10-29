@@ -44,7 +44,8 @@ module.exports.subcommands.add = {
 		var scc = await bot.utils.addReceipt(bot, args[0].toLowerCase(), msg.guild.id, args.slice(1).join(" "));
 		if(scc) msg.channel.createMessage("Receipt added!");
 		else msg.channel.createMessage("Something went wrong");
-	}
+	},
+	guildOnly: true
 }
 
 module.exports.subcommands.remove = {
@@ -62,7 +63,8 @@ module.exports.subcommands.remove = {
 		var scc = await bot.utils.deleteReceipt(bot, args[0].toLowerCase(), msg.guild.id);
 		if(scc) msg.channel.createMessage("Receipt removed!");
 		else msg.channel.createMessage("Something went wrong");
-	}
+	},
+	guildOnly: true
 }
 
 module.exports.subcommands.edit = {
@@ -80,5 +82,6 @@ module.exports.subcommands.edit = {
 		var scc = await bot.utils.editReceipt(bot, args[0].toLowerCase(), msg.guild.id, args.slice(1).join(" "));
 		if(scc) msg.channel.createMessage("Receipt edited!");
 		else msg.channel.createMessage("Something went wrong");
-	}
+	},
+	guildOnly: true
 }

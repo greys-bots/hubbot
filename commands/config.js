@@ -42,7 +42,8 @@ module.exports = {
 	},
 	alias: ['conf'],
 	subcommands: {},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }
 
 module.exports.subcommands.banlog = {
@@ -80,7 +81,8 @@ module.exports.subcommands.banlog = {
 		}
 	},
 	alias: ['banchannel', "banlogs", "banlogchannel"],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }
 
 module.exports.subcommands.reprole = {
@@ -117,7 +119,8 @@ module.exports.subcommands.reprole = {
 			})
 		}
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }
 
 module.exports.subcommands.delist = {
@@ -155,5 +158,6 @@ module.exports.subcommands.delist = {
 		}
 	},
 	alias: ['delistchannel', "delete", "delisting", "deletechannel", "denychannel", "deny"],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

@@ -19,5 +19,6 @@ module.exports = {
 		}
 	},
 	alias: ['desc'],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

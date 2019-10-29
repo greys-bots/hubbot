@@ -18,5 +18,6 @@ module.exports = {
 		}
 	},
 	alias: ['pic', 'avatar', 'image', 'img', 'picture'],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

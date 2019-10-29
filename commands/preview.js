@@ -26,5 +26,6 @@ module.exports = {
 			}
 		}})
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

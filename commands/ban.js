@@ -95,7 +95,8 @@ module.exports = {
 		});
 	},
 	permissions: ["manageMessages"],
-	subcommands: {}
+	subcommands: {},
+	guildOnly: true
 }
 
 module.exports.subcommands.edit = {
@@ -127,5 +128,6 @@ module.exports.subcommands.edit = {
 		}
 		
 		msg.channel.createMessage("Log edited!");
-	}
+	},
+	guildOnly: true
 }

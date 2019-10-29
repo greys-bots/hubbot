@@ -60,5 +60,6 @@ module.exports = {
 		
 	},
 	alias: ['delist'],
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }

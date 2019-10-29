@@ -23,7 +23,8 @@ module.exports = {
 	},
 	alias: ['reactcategories', 'rc'],
 	permissions: ["manageRoles"],
-	subcommands: {}
+	subcommands: {},
+	guildOnly: true
 }
 
 module.exports.subcommands.create = {
@@ -48,7 +49,8 @@ module.exports.subcommands.create = {
 			}
 		})
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.delete = {
@@ -61,7 +63,8 @@ module.exports.subcommands.delete = {
 		await bot.utils.deleteReactionCategory(bot, msg.guild.id, args[0]);
 		msg.channel.createMessage("Category deleted!");
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.name = {
@@ -82,7 +85,8 @@ module.exports.subcommands.name = {
 		})
 	},
 	alias: ["describe", "desc"],
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.description = {
@@ -103,7 +107,8 @@ module.exports.subcommands.description = {
 		})
 	},
 	alias: ["describe", "desc"],
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.add = {
@@ -175,7 +180,8 @@ module.exports.subcommands.add = {
 		
 		
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.remove = {
@@ -231,7 +237,8 @@ module.exports.subcommands.remove = {
 
 		})
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.post = {
@@ -305,7 +312,8 @@ module.exports.subcommands.post = {
 		}
 		
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }
 
 module.exports.subcommands.info = {
@@ -342,5 +350,6 @@ module.exports.subcommands.info = {
 			})
 		}
 	},
-	permissions: ["manageRoles"]
+	permissions: ["manageRoles"],
+	guildOnly: true
 }

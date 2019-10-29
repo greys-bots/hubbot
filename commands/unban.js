@@ -86,5 +86,6 @@ module.exports = {
 			channel.createMessage(message)
 		});
 	},
-	permissions: ["manageMessages"]
+	permissions: ["manageMessages"],
+	guildOnly: true
 }
