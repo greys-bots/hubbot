@@ -44,7 +44,7 @@ module.exports = {
 		if(messages[0]) {
 			if(["y","yes","true","1"].includes(messages[0].content.toLowerCase())) {
 				bot.createMessage(cfg.feedback.channel, {embed: embed});
-				bot.utils.addTicket(bot, code, args[0], msg.author.id, embed.description, anon);
+				bot.utils.addFeedbackTicket(bot, code, args[0], msg.author.id, embed.description, anon);
 				msg.channel.createMessage(`Sent!`)
 			} else return msg.channel.createMessage("Action cancelled");
 		} else return msg.channel.createMessage("Action cancelled: timed out");
@@ -120,7 +120,7 @@ module.exports.subcommands.reply = {
 	execute: async (bot, msg, args) => {
 		if(!args[1]) return msg.channel.createMessage("Please provide a ticket and a message");
 
-		var ticket = await bot.utils.getTicket(bot, msg.guild.id, args[0]);
+		var ticket = await bot.utils.getFeedbackTicket(bot, msg.guild.id, args[0]);
 		if(!ticket) return msg.channel.createMessage('Ticket not found');
 
 		var channel = await bot.getDMChannel(ticket.sender_id);
@@ -153,11 +153,11 @@ module.exports.subcommands.delete = {
 	execute: async (bot, msg, args) => {
 		if(!args[0]) return msg.channel.createMessage('Please provide a ticket to delete');
 		if(args[0] == "*") {
-			var scc = await bot.utils.deleteTickets(bot, msg.guild.id);
+			var scc = await bot.utils.deleteFeedbackTickets(bot, msg.guild.id);
 			if(scc) msg.channel.createMessage('Tickets deleted!');
 			else msg.channel.createMessage('Something went wrong')
 		} else {
-			var scc = await bot.utils.deleteTicket(bot, msg.guild.id, args[0]);
+			var scc = await bot.utils.deleteFeedbackTicket(bot, msg.guild.id, args[0]);
 			if(scc) msg.channel.createMessage('Ticket deleted!');
 			else msg.channel.createMessage('Something went wrong')
 		}
@@ -170,7 +170,7 @@ module.exports.subcommands.list = {
 	help: ()=> "Lists all feedback tickets",
 	usage: ()=> [" - Lists all indexed tickets for the server"],
 	execute: async (bot, msg, args) => {
-		var tickets = await bot.utils.getTickets(bot, msg.guild.id);
+		var tickets = await bot.utils.getFeedbackTickets(bot, msg.guild.id);
 		if(!tickets || !tickets[0]) return msg.channel.createMessage('No tickets registered for this server');
 
 		await Promise.all(tickets.map(async t => {
@@ -225,7 +225,7 @@ module.exports.subcommands.view = {
 	usage: ()=> [" [id] - Views a ticket with the given ID"],
 	execute: async (bot, msg, args) => {
 		if(!args[0]) return msg.channel.createMessage("Please provide a ticket ID.")
-		var ticket = await bot.utils.getTicket(bot, msg.guild.id, args[0]);
+		var ticket = await bot.utils.getFeedbackTicket(bot, msg.guild.id, args[0]);
 		if(!ticket) return msg.channel.createMessage("That ticket does not exist");
 
 		var user = await bot.utils.fetchUser(bot, ticket.sender_id);
@@ -260,9 +260,9 @@ module.exports.subcommands.find = {
 		}
 		if(!user && !query) return msg.channel.createMessage("Please provide a search query");
 
-		if(user && !query) tickets = await bot.utils.getTicketsFromUser(bot, msg.guild.id, user);
-		if(user && query) tickets = await bot.utils.searchTicketsFromUser(bot, msg.guild.id, user, query);
-		if(!user && query) tickets = await bot.utils.searchTickets(bot, msg.guild.id, query);
+		if(user && !query) tickets = await bot.utils.getFeedbackTicketsFromUser(bot, msg.guild.id, user);
+		if(user && query) tickets = await bot.utils.searchFeedbackTicketsFromUser(bot, msg.guild.id, user, query);
+		if(!user && query) tickets = await bot.utils.searchFeedbackTickets(bot, msg.guild.id, query);
 
 		if(!tickets || !tickets[0]) return msg.channel.createMessage('No tickets found matching that query');
 

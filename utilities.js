@@ -878,7 +878,7 @@ module.exports = {
 	},
 
 	//feedback
-	addTicket: async (bot, hid, server, user, message, anon) => {
+	addFeedbackTicket: async (bot, hid, server, user, message, anon) => {
 		return new Promise(async res=> {
 			bot.db.query(`INSERT INTO feedback (hid, server_id, sender_id, message, anon) VALUES (?,?,?,?,?)`,
 				[hid, server, user, message, anon], (err, rows)=> {
@@ -891,7 +891,7 @@ module.exports = {
 				})
 		})
 	},
-	getTickets: async (bot, server) => {
+	getFeedbackTickets: async (bot, server) => {
 		return new Promise(async res=> {
 			bot.db.query(`SELECT * FROM feedback WHERE server_id = ?`, [server],
 			{
@@ -911,7 +911,7 @@ module.exports = {
 				}) 
 		})
 	},
-	getTicket: async (bot, server, hid) => {
+	getFeedbackTicket: async (bot, server, hid) => {
 		return new Promise(async res=> {
 			bot.db.query(`SELECT * FROM feedback WHERE server_id = ? AND hid = ?`, [server, hid],
 			{
@@ -931,7 +931,7 @@ module.exports = {
 				}) 
 		})
 	},
-	getTicketsFromUser: async (bot, server, id) => {
+	getFeedbackTicketsFromUser: async (bot, server, id) => {
 		return new Promise(async res=> {
 			bot.db.query(`SELECT * FROM feedback WHERE server_id = ? AND sender_id = ? AND anon = 0`, [server, id],
 			{
@@ -951,7 +951,7 @@ module.exports = {
 				}) 
 		})
 	},
-	searchTickets: async (bot, server, query) => {
+	searchFeedbackTickets: async (bot, server, query) => {
 		return new Promise(res => {
 			bot.db.query(`SELECT * FROM feedback WHERE server_id = ?`,[server],
 			{
@@ -971,7 +971,7 @@ module.exports = {
 			})
 		})
 	},
-	searchTicketsFromUser: async (bot, server, id, query) => {
+	searchFeedbackTicketsFromUser: async (bot, server, id, query) => {
 		return new Promise(res => {
 			bot.db.query(`SELECT * FROM feedback WHERE server_id = ? AND sender_id = ? AND anon = 0`,[server, id],
 			{
@@ -991,7 +991,7 @@ module.exports = {
 			})
 		})
 	},
-	deleteTicket: async (bot, server, hid) => {
+	deleteFeedbackTicket: async (bot, server, hid) => {
 		return new Promise(res => {
 			bot.db.query(`DELETE FROM feedback WHERE server_id = ? AND hid = ?`,[server, hid], (err, rows) => {
 				if(err) {
@@ -1001,7 +1001,7 @@ module.exports = {
 			})
 		})
 	},
-	deleteTickets: async (bot, server) => {
+	deleteFeedbackTickets: async (bot, server) => {
 		return new Promise(res => {
 			bot.db.query(`DELETE FROM feedback WHERE server_id = ?`,[server], (err, rows) => {
 				if(err) {
@@ -1021,5 +1021,237 @@ module.exports = {
 			}
 			res(user);
 		})
+	},
+
+	//support tickets
+	getSupportConfig: async (bot, server) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM ticket_configs WHERE server_id=?`,[server],{
+				id: Number,
+				server_id: String,
+				category_id: String
+			}, (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0])
+				}
+			})
+		})
+	},
+	createSupportConfig: async (bot, server, category) => {
+		return new Promise(res => {
+			bot.db.query(`INSERT INTO ticket_configs (server_id, category_id) VALUES (?,?)`,[server, category], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false);
+				} else {
+					res(true);
+				}
+			})
+		})
+	},
+	updateSupportConfig: async (bot, server, key, val) => {
+		return new Promise(res => {
+			bot.db.query(`UPDATE ticket_configs SET ?=? WHERE server_id=?`,[key, val, server], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false)
+				} else {
+					res(true)
+				}
+			})
+		})
+	},
+	getSupportTickets: async (bot, server) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM tickets WHERE server_id=?`,[server],{
+				id: Number,
+				hid: String,
+				server_id: String,
+				channel_id: String,
+				first_message: String,
+				opener: String,
+				users: JSON.parse
+			}, async (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					var tickets = rows;
+					if(!tickets[0]) return res(undefined);
+
+					await bot.asyncForEach(tickets, bot, null, null, async (bot, msg, args, ticket, ind) => {
+						var users = [];
+						await Promise.all(ticket.users.map(async u => {
+							var us = await bot.utils.fetchUser(bot, u);
+							users.push(us);
+							return Promise.resolve()
+						}))
+						tickets[ind].users = users;
+						var opener = await bot.utils.fetchUser(bot, ticket.opener);
+						tickets[ind].opener = opener;
+					})
+
+					res(tickets);
+				}
+			})
+		})
+	},
+	getSupportTicketsByUser: async (bot, server, user) => {
+		return new Promise(async res => {
+			var tickets = await bot.utils.getSupportTickets(bot, server);
+			console.log(tickets);
+			if(!tickets) return res(undefined);
+			tickets = tickets.filter(t => t.opener.id == user);
+			if(!tickets[0]) res(undefined);
+			else res(tickets);
+		})
+	},
+	getSupportTicket: async (bot, server, hid) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM tickets WHERE server_id=? AND hid=?`,[server, hid],{
+				id: Number,
+				hid: String,
+				server_id: String,
+				channel_id: String,
+				first_message: String,
+				opener: String,
+				users: JSON.parse
+			}, async (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					var ticket = rows[0];
+					if(!ticket) return res(undefined);
+
+					var users = [];
+					await Promise.all(ticket.users.map(async u => {
+						var us = await bot.utils.fetchUser(bot, u);
+						users.push(us);
+						return Promise.resolve()
+					}))
+					ticket.users = users;
+					var opener = await bot.utils.fetchUser(bot, ticket.opener);
+					ticket.opener = opener;
+
+					res(ticket);
+				}
+			})
+		})
+	},
+	createSupportTicket: async (bot, server, user) => {
+		return new Promise(async res => {
+			var cfg = await bot.utils.getSupportConfig(bot, server);
+			if(!cfg) return res({err: "No config registered; please run `hub!ticket config` first"});
+			var code = bot.utils.genCode(bot.CHARS);
+			try {
+				var channel = await bot.createChannel(server, `ticket-${code}`, 0, "", {
+					topic: `Ticket ${code}`,
+					parentID: cfg.category_id
+				})
+				channel.editPermission(user.id, 1024, 0, "member");
+			} catch(e) {
+				console.log(e);
+				return res({err: "Couldn't create and/or channel; please make sure I have permission and there are channel slots left"});
+			}
+
+			try {
+				var message = await bot.createMessage(channel.id, {
+					content: `Thank you for opening a ticket, ${user.mention}! You can chat with support staff here.`,
+					embed: {
+						title: "Ticket opened!",
+						fields: [
+							{name: "Ticket Opener", value: user.mention},
+							{name: "Ticket Users", value: user.mention}
+						],
+						color: 2074412,
+						footer: {
+							text: "Ticket ID: "+code
+						}
+					}
+				})
+			} catch(e) {
+				console.log(e);
+				return res({err: "Could not send message; please make sure I have permission"})
+			}
+			bot.db.query(`INSERT INTO tickets (hid, server_id, channel_id, first_message, opener, users) VALUES (?,?,?,?,?,?)`,[code, server, channel.id, message.id, user.id, [user.id]], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res({err: "Couldn't insert data"})
+				} else {
+					res({hid: code});
+				}
+			})
+		})
+	},
+	deleteSupportTicket: async (bot, server, channel) => {
+		return new Promise(res => {
+			bot.db.query(`DELETE FROM tickets WHERE server_id = ? AND channel_id = ?`,[server, channel], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false)
+				} else res(true)
+			})
+		})
+	},
+	addTicketPost: async (bot, server, channel, message) => {
+		return new Promise(res => {
+			bot.db.query(`INSERT INTO ticket_posts (server_id, channel_id, message_id) VALUES (?,?,?)`,[server, channel, message], (err, rows) => {
+				if(err) {
+					console.log(err);
+					res(false)
+				} else res(true)
+			})
+		})
+	},
+	getTicketPosts: async (bot, server) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM ticket_posts WHERE server_id = ?`,[server],{
+				id: Number,
+				server_id: String,
+				channel_id: String,
+				message_id: String
+			}, (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows)
+				}
+			})
+		})
+	},
+	getTicketPost: async (bot, server, channel, message) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM ticket_posts WHERE server_id = ? AND channel_id = ? AND message_id = ?`,[server, channel, message],{
+				id: Number,
+				server_id: String,
+				channel_id: String,
+				message_id: String
+			}, (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					res(rows[0])
+				}
+			})
+		})
+	},
+	deleteTicketPost: async (bot, server, channel, message) => {
+		return new Promise(res => {
+			bot.db.query(`DELETE FROM ticket_posts WHERE server_id = ? AND channel_id = ? AND message_id = ?`,[server, channel, message], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false)
+				} else {
+					res(true)
+				}
+			})
+		})
 	}
+	//add/remove users to/from support ticket
 }

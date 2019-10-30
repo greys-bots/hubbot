@@ -131,6 +131,29 @@ async function setup() {
 		anon 		INTEGER
 	)`);
 
+	bot.db.query(`CREATE TABLE IF NOT EXISTS ticket_configs (
+		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id	TEXT,
+		category_id	TEXT
+	)`)
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS ticket_posts (
+		id			INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id	TEXT,
+		channel_id	TEXT,
+		message_id	TEXT
+	)`)
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS tickets (
+		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+		hid 			TEXT,
+		server_id 		TEXT,
+		channel_id		TEXT,
+		first_message 	TEXT,
+		opener 			TEXT,
+		users 			TEXT
+	)`)
+
 	var files = fs.readdirSync("./commands");
 	await Promise.all(files.map(f => {
 		bot.commands[f.slice(0,-3)] = require("./commands/"+f);
@@ -379,7 +402,8 @@ bot.commands.help = {
 						`**Aliases:** ${cmd.alias ? cmd.alias.join(", ") : "(none)"}\n\n`,
 						`**Subcommands**\n${cmd.subcommands ?
 							Object.keys(cmd.subcommands).map(sc => `**${bot.prefix}${sc}** - ${cmd.subcommands[sc].help()}`).join("\n") : 
-							"(none)"}`
+							"(none)"}`,
+						(cmd.desc ? "\n\n"+cmd.desc() : "")
 					].join(""),
 					footer: {
 						icon_url: bot.user.avatarURL,
@@ -553,6 +577,32 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 			console.log(e);
 		}
 	}
+
+	var tpost = await bot.utils.getTicketPost(bot, msg.channel.guild.id, msg.channel.id, msg.id);
+	if(tpost) {
+		await bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
+		var ch = await bot.getDMChannel(user);
+		var tickets = await bot.utils.getSupportTicketsByUser(bot, msg.channel.guild.id, user);
+		console.log(tickets);
+		if(tickets && tickets.length >= 5) {
+			try {
+				return ch.createMessage("Couldn't open ticket: you already have 5 open for that server")
+			} catch(e) {
+				console.log(e);
+				return;
+			}
+		}
+		var us = await bot.utils.fetchUser(bot, user);
+		var ticket = await bot.utils.createSupportTicket(bot, msg.channel.guild.id, us);
+		if(!ticket.hid) {
+			try {
+				ch.createMessage("Couldn't open your support ticket:\n"+ticket.err);
+			} catch(e) {
+				console.log(e);
+				return;
+			}	
+		}
+	}
 });
 
 bot.on("messageReactionRemove", async (msg, emoji, user) => {
@@ -571,6 +621,11 @@ bot.on("messageReactionRemove", async (msg, emoji, user) => {
 
 bot.on("messageDelete", async (msg) => {
 	bot.db.query(`DELETE FROM reactposts WHERE server_id=? AND channel_id=? AND message_id=?`,[msg.channel.guild.id, msg.channel.id, msg.id]);
+	await bot.utils.deleteTicketPost(bot, msg.channel.guild.id, msg.channel.id, msg.id);
+})
+
+bot.on("channelDelete", async (channel) => {
+	await bot.utils.deleteSupportTicket(bot, channel.guild.id, channel.id);
 })
 
 setup();
