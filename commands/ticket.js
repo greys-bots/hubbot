@@ -65,7 +65,7 @@ module.exports = {
 			}})
 		}
 	},
-	permissions: ["manageGuild"],
+	permissions: ["manageMessages"],
 	guildOnly: true,
 	alias: ["support","tickets"],
 	subcommands: {}
@@ -108,7 +108,7 @@ module.exports.subcommands.post = {
 		if(scc) msg.channel.createMessage("Post sent!");
 		else msg.channel.createMessage("Something went wrong")
 	},
-	permissions: ["manageGuild"],
+	permissions: ["manageMessages"],
 	guildOnly: true
 }
 
@@ -200,6 +200,8 @@ module.exports.subcommands.archive = {
 		} else {
 			channel.id == msg.channel.id ? c.createMessage("Ticket archived, but could not be deleted from the database") : msg.channel.createMessage("Ticket archived, but could not be deleted from the database")
 		}
-	}
+	},
+	permissions: ['manageMessages'],
+	guildOnly: true
 }
 
