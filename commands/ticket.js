@@ -163,7 +163,8 @@ module.exports.subcommands.archive = {
 		if(!messages) return msg.channel.createMessage("Either that channel has no messages or I couldn't get them");
 
 		var data = [
-			[`Ticket opener: ${ticket.opener.username}#${ticket.opener.discriminator} (${ticket.opener.id}\n`,
+			[`Ticket opened: ${bot.formatTime(new Date(ticket.timestamp))}`,
+			`Ticket opener: ${ticket.opener.username}#${ticket.opener.discriminator} (${ticket.opener.id}\n`,
 			 `Users involved:\n${ticket.users.map(u => `${u.username}#${u.discriminator} (${u.id}`)}`].join("")
 		];
 		messages.forEach(m => {
@@ -283,7 +284,8 @@ module.exports.subcommands.add = {
 					color: 2074412,
 					footer: {
 						text: "Ticket ID: "+ticket.hid
-					}
+					},
+					timestamp: ticket.timestamp
 				}})
 			} catch(e) {
 				console.log(e);
@@ -347,7 +349,8 @@ module.exports.subcommands.remove = {
 					color: 2074412,
 					footer: {
 						text: "Ticket ID: "+ticket.hid
-					}
+					},
+					timestamp: ticket.timestamp
 				}})
 			} catch(e) {
 				console.log(e);
@@ -370,6 +373,9 @@ module.exports.subcommands.bind = {
 	desc: ()=> "The channel can be a #mention, ID, or channel-name",
 	execute: async (bot, msg, args) => {
 		if(!args[1]) return msg.channel.createMessage("Please provide the channel and message ID to bind the reaction to");
+
+		var cfg = await bot.utils.getSupportConfig(bot, msg.guild.id);
+		if(!cfg) return msg.channel.createMessage("Please run `hub!ticket config setup` before doing this");
 
 		var channel = msg.guild.channels.find(ch => ch.id == args[0].replace(/[<#>]/g,"") || ch.name == args[0].toLowerCase());
 		if(!channel) return msg.channel.createMessage("Channel not found");

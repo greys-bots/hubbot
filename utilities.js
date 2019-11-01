@@ -1073,7 +1073,8 @@ module.exports = {
 				channel_id: String,
 				first_message: String,
 				opener: String,
-				users: JSON.parse
+				users: JSON.parse,
+				timestamp: String
 			}, async (err, rows)=> {
 				if(err) {
 					console.log(err);
@@ -1118,7 +1119,8 @@ module.exports = {
 				channel_id: String,
 				first_message: String,
 				opener: String,
-				users: JSON.parse
+				users: JSON.parse,
+				timestamp: String
 			}, async (err, rows)=> {
 				if(err) {
 					console.log(err);
@@ -1154,7 +1156,7 @@ module.exports = {
 	createSupportTicket: async (bot, server, user) => {
 		return new Promise(async res => {
 			var cfg = await bot.utils.getSupportConfig(bot, server);
-			if(!cfg) return res({err: "No config registered; please run `hub!ticket config` first"});
+			if(!cfg) return res({err: "No config registered; please run `hub!ticket config setup` first"});
 			var code = bot.utils.genCode(bot.CHARS);
 			var time = new Date();
 			try {
