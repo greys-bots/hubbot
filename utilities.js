@@ -1089,6 +1089,7 @@ module.exports = {
 							users.push(us);
 							return Promise.resolve()
 						}))
+						tickets[ind].userids = tickets[ind].users;
 						tickets[ind].users = users;
 						var opener = await bot.utils.fetchUser(bot, ticket.opener);
 						tickets[ind].opener = opener;
@@ -1101,8 +1102,7 @@ module.exports = {
 	},
 	getSupportTicketsByUser: async (bot, server, user) => {
 		return new Promise(async res => {
-			var tickets = await bot.utils.getSupportTickets(bot, server);
-			console.log(tickets);
+			var tickets = await bot.utils.getSupportTickets(bot, server); //so all the user info is there
 			if(!tickets) return res(undefined);
 			tickets = tickets.filter(t => t.opener.id == user);
 			if(!tickets[0]) res(undefined);
@@ -1133,6 +1133,7 @@ module.exports = {
 						users.push(us);
 						return Promise.resolve()
 					}))
+					ticket.userids = ticket.users;
 					ticket.users = users;
 					var opener = await bot.utils.fetchUser(bot, ticket.opener);
 					ticket.opener = opener;
@@ -1142,11 +1143,20 @@ module.exports = {
 			})
 		})
 	},
+	getSupportTicketByChannel: async (bot, server, channel) => {
+		return new Promise(async res => {
+			var tickets = await bot.utils.getSupportTickets(bot, server);
+			if(!tickets) return res(undefined);
+			var ticket = tickets.find(t => t.channel_id == channel);
+			res(ticket);
+		})
+	},
 	createSupportTicket: async (bot, server, user) => {
 		return new Promise(async res => {
 			var cfg = await bot.utils.getSupportConfig(bot, server);
 			if(!cfg) return res({err: "No config registered; please run `hub!ticket config` first"});
 			var code = bot.utils.genCode(bot.CHARS);
+			var time = new Date();
 			try {
 				var channel = await bot.createChannel(server, `ticket-${code}`, 0, "", {
 					topic: `Ticket ${code}`,
@@ -1170,14 +1180,15 @@ module.exports = {
 						color: 2074412,
 						footer: {
 							text: "Ticket ID: "+code
-						}
+						},
+						timestamp: time
 					}
 				})
 			} catch(e) {
 				console.log(e);
 				return res({err: "Could not send message; please make sure I have permission"})
 			}
-			bot.db.query(`INSERT INTO tickets (hid, server_id, channel_id, first_message, opener, users) VALUES (?,?,?,?,?,?)`,[code, server, channel.id, message.id, user.id, [user.id]], (err, rows)=> {
+			bot.db.query(`INSERT INTO tickets (hid, server_id, channel_id, first_message, opener, users, timestamp) VALUES (?,?,?,?,?,?,?)`,[code, server, channel.id, message.id, user.id, [user.id], time.toISOString()], (err, rows)=> {
 				if(err) {
 					console.log(err);
 					res({err: "Couldn't insert data"})
@@ -1194,6 +1205,16 @@ module.exports = {
 					console.log(err);
 					res(false)
 				} else res(true)
+			})
+		})
+	},
+	editSupportTicket: async (bot, server, ticket, key, val) => {
+		return new Promise(res => {
+			bot.db.query(`UPDATE tickets SET ?=? WHERE server_id = ? AND hid = ?`,[key, val, server, ticket], (err, rows)=> {
+				if(err) {
+					console.log(err);
+					res(false);
+				} else res(true);
 			})
 		})
 	},
@@ -1253,5 +1274,4 @@ module.exports = {
 			})
 		})
 	}
-	//add/remove users to/from support ticket
 }

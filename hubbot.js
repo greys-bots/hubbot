@@ -151,7 +151,8 @@ async function setup() {
 		channel_id		TEXT,
 		first_message 	TEXT,
 		opener 			TEXT,
-		users 			TEXT
+		users 			TEXT,
+		timestamp 		TEXT
 	)`)
 
 	var files = fs.readdirSync("./commands");
@@ -161,6 +162,12 @@ async function setup() {
 			setTimeout(res("a"),100)
 		})
 	})).then(()=> console.log("finished loading commands."));
+}
+
+bot.formatTime = (date) => {
+	if(typeof date == "string") date = new Date(date);
+
+	return `${(date.getMonth()+1) < 10 ? "0"+(date.getMonth()+1) : (date.getMonth()+1)}.${(date.getDate()) < 10 ? "0"+(date.getDate()) : (date.getDate())}.${date.getFullYear()} at ${date.getHours() < 10 ? "0"+date.getHours() : date.getHours()}:${date.getMinutes() < 10 ? "0"+date.getMinutes() : date.getMinutes()}`
 }
 
 bot.asyncForEach = async (arr, bot, msg, args, cb) => {
@@ -215,7 +222,6 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 		cmd.newActions = [];
 
 		cmd.actions.forEach(action => {
-			console.log(cmd.target);
 			if(cmd.target == "member") {
 				switch(action.type) {
 					case "if":
@@ -352,7 +358,6 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 		cmd.execute = async (bot, msg, args, cmd) => {
 			let msgs = [];
 			await bot.asyncForEach(cmd.newActions, bot, msg, args, async (bot, msg, args, a) => {
-				console.log(a);
 				try {
 					await a[0].call(null, bot, msg, args);
 				} catch (e) {
@@ -363,7 +368,6 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 					msgs.push(message);
 				})
 			})
-			console.log("test");
 			if(cmd.del) {
 				setTimeout(async ()=> {
 					await msg.delete();
@@ -506,7 +510,6 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 			var sbpost = await bot.utils.getStarPost(bot, msg.channel.guild.id, msg.id, em);
 			var message = await bot.getMessage(msg.channel.id, msg.id);
 			if(!sbpost) {
-				console.log(em);
 				var chan = cf.channel;
 				var member = msg.channel.guild.members.find(m => m.id == user);
 				var tolerance = cf.tolerance ? cf.tolerance : (cfg.starboard.tolerance || 2);
@@ -583,7 +586,6 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 		await bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
 		var ch = await bot.getDMChannel(user);
 		var tickets = await bot.utils.getSupportTicketsByUser(bot, msg.channel.guild.id, user);
-		console.log(tickets);
 		if(tickets && tickets.length >= 5) {
 			try {
 				return ch.createMessage("Couldn't open ticket: you already have 5 open for that server")
