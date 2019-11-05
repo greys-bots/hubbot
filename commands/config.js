@@ -1,6 +1,12 @@
 module.exports = {
 	help: ()=> "Sets configs for the server.",
-	usage: ()=> [" banlog [channel] - Sets banlog channel for the server"],
+	usage: ()=> [" banlog [channel] - Sets banlog channel for the server",
+				 " banmsg [message] - Sets ban message for the server (this is what users are DM'd upon being banned, as long as they were in the server first)",
+				 " delist [channe] - Sets delist/deny channel for the server",
+				 " reprole [role] - Sets representative role for the server"],
+	desc: ()=> ["Channels can be channel-names, #mentions, or IDs. The role can be a role name, @mention, or ID",
+				"Available vars for ban messages:",
+				"$REASON - The reason a user was banned"].join("\n"),
 	execute: async (bot, msg, args)=> {
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		var textconf = "";
@@ -40,7 +46,7 @@ module.exports = {
 
 		msg.channel.createMessage(`Current configs:\n`+textconf);
 	},
-	alias: ['conf'],
+	alias: ['conf','cfg'],
 	subcommands: {},
 	permissions: ["manageMessages"],
 	guildOnly: true
@@ -51,37 +57,30 @@ module.exports.subcommands.banlog = {
 	usage: ()=> [" [channel] - Sets banlog channel for the server (NOTE: can be channel ID, channel mention, or channel name"],
 	execute: async (bot, msg, args)=> {
 		if(!args[0]) return msg.channel.createMessage('Please provide a channel.');
-		var chan = msg.channelMentions.length > 0 ?
-				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
-				   msg.guild.channels.find(ch => ch.id == args[0] || ch.name == args[0]);
+		var chan = msg.guild.channels.find(ch => ch.id == args[0].replace(/[<#>]/g,"") || ch.name == args[0].toLowerCase());
+		if(!chan) return msg.channel.createMessage("Channel not found");
 
-		var conf = await bot.utils.getConfig(bot, msg.guild.id);
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "banlog_channel", chan.id);
+		if(scc) msg.channel.createMessage("Banlog channel set!");
+		else msg.channel.createMessage("Something went wrong");
 
-		if(conf) {
-			bot.db.query(`UPDATE configs SET banlog_channel=? WHERE server_id=?`,[chan.id, msg.guild.id],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Banlog channel set!');
-				}
-			})
-		} else {
-			bot.db.query(`INSERT INTO configs (server_id, banlog_channel) VALUES (?,?)`,[
-					msg.guild.id,
-					chan.id
-			],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Banlog channel set!');
-				}
-			})
-		}
 	},
 	alias: ['banchannel', "banlogs", "banlogchannel"],
 	permissions: ["manageMessages"],
+	guildOnly: true
+}
+
+module.exports.subcommands.banmsg = {
+	help: ()=> "Set the message that a user is DM'd upon being banned",
+	usage: ()=> [" [message] - Set the message"],
+	desc: ()=> "This is NOT the message that appears when a member is banned. This will be DM'd to a user that is banned as long as they are in the server when the ban happened.\nAvailable message vars:\n$REASON - The reason the user was banned",
+	execute: async (bot, msg, args) => {
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "ban_message", args.join(" "));
+		if(scc) msg.channel.createMessage("Ban message set!");
+		else msg.channel.createMessage("Something went wrong");
+	},
+	alias: ["banmessage","bm","banlogmessage","banlogmsg"],
+	permissions: ["manageGuild"],
 	guildOnly: true
 }
 
@@ -90,34 +89,12 @@ module.exports.subcommands.reprole = {
 	usage: ()=> [" [role] - Sets rep role for the server (NOTE: can be role ID, role mention, or role name"],
 	execute: async (bot, msg, args)=> {
 		if(!args[0]) return msg.channel.createMessage('Please provide a channel.');
-		var role = msg.roleMentions.length > 0 ?
-				   msg.guild.roles.find(rl => rl.id == msg.roleMentions[0]) :
-				   msg.guild.roles.find(rl => rl.id == args[0] || rl.name.toLowerCase() == args.join(" ").toLowerCase());
+		var role = msg.guild.roles.find(rl => rl.id == args[0].replace(/[<&>]/g,"") || rl.name.toLowerCase() == args.join(" ").toLowerCase());
+		if(!role) return msg.channel.createMessage("Role not found");
 
-		var conf = await bot.utils.getConfig(bot, msg.guild.id);
-
-		if(conf) {
-			bot.db.query(`UPDATE configs SET reprole=? WHERE server_id=?`,[role.id, msg.guild.id],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Representative role set!');
-				}
-			})
-		} else {
-			bot.db.query(`INSERT INTO configs (server_id, reprole) VALUES (?,?)`,[
-				msg.guild.id,
-				role.id
-			],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Representative role set!');
-				}
-			})
-		}
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "reprole", role.id);
+		if(scc) msg.channel.createMessage("Representative role set!");
+		else msg.channel.createMessage("Something went wrong");
 	},
 	permissions: ["manageMessages"],
 	guildOnly: true
@@ -128,34 +105,13 @@ module.exports.subcommands.delist = {
 	usage: ()=> [" [channel] - Sets delist channel for the server (NOTE: can be channel ID, channel mention, or channel name"],
 	execute: async (bot, msg, args)=> {
 		if(!args[0]) return msg.channel.createMessage('Please provide a channel.');
-		var chan = msg.channelMentions.length > 0 ?
-				   msg.guild.channels.find(ch => ch.id == msg.channelMentions[0]) :
-				   msg.guild.channels.find(ch => ch.id == args[0] || ch.name == args[0]);
+		var chan = msg.guild.channels.find(ch => ch.id == args[0].replace(/[<#>]/g,"") || ch.name == args[0].toLowerCase());
+		if(!chan) return msg.channel.createMessage("Channel not found");
 
-		var conf = await bot.utils.getConfig(bot, msg.guild.id);
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "delist_channel", chan.id);
+		if(scc) msg.channel.createMessage("Delist channel set!");
+		else msg.channel.createMessage("Something went wrong");
 
-		if(conf) {
-			bot.db.query(`UPDATE configs SET delist_channel=? WHERE server_id=?`,[chan.id, msg.guild.id],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Delist channel set!');
-				}
-			})
-		} else {
-			bot.db.query(`INSERT INTO configs (server_id, delist_channel) VALUES (?,?)`,[
-					msg.guild.id,
-					chan.id
-			],(err,rows)=>{
-				if(err) {
-					console.log(err);
-					msg.channel.createMessage('Something went wrong.')
-				} else {
-					msg.channel.createMessage('Delist channel set!');
-				}
-			})
-		}
 	},
 	alias: ['delistchannel', "delete", "delisting", "deletechannel", "denychannel", "deny"],
 	permissions: ["manageMessages"],
