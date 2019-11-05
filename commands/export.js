@@ -17,5 +17,7 @@ module.exports = {
 		}
 
 		await msg.removeReaction("⌛");
-	}
+	},
+	permissions: ["manageGuild"],
+	guildOnly: true
 }

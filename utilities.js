@@ -782,7 +782,13 @@ module.exports = {
 					if(rows[0]) {
 						var logs = [];
 						await Promise.all(rows.map(async b => {
-							var message = await bot.getMessage(b.channel_id, b.message_id);
+							var message;
+							try {
+								message = await bot.getMessage(b.channel_id, b.message_id);
+							} catch(e) {
+								console.log(e.stack);
+								message = undefined;
+							}
 
 							if(message) {
 								b.embed = message.embeds[0];
