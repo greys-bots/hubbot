@@ -792,12 +792,11 @@ module.exports = {
 
 							if(message) {
 								b.embed = message.embeds[0];
+								logs.push(b);
 							} else {
-								b = "deleted";
-								await removeBanLog(bot, b.hid, server)
+								await bot.utils.removeBanLog(bot, b.hid, server)
 							}
 
-							logs.push(b);
 							return Promise.resolve()
 						}))
 
@@ -819,10 +818,7 @@ module.exports = {
 						var message = await bot.getMessage(rows[0].channel_id, rows[0].message_id);
 
 						if(message) rows[0].embed = message.embeds[0];
-						else {
-							rows[0] = "deleted";
-							await removeBanLog(bot, hid, server)
-						}
+						else await bot.utils.removeBanLog(bot, rows[0].hid, server);
 
 						res(rows[0]);
 
