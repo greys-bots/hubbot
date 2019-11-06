@@ -772,6 +772,19 @@ module.exports = {
 	},
 
 	//bans
+	getRawBanLogs: async (bot, server) => {
+		return new Promise(res => {
+			bot.db.query(`SELECT * FROM banlogs WHERE server_id = ?`, [server], async (err, rows) => {
+				if(err) {
+					console.log(err);
+					res(undefined);
+				} else {
+					if(rows[0]) res(rows);
+					else res(undefined)
+				}
+			})
+		})
+	},
 	getBanLogs: async (bot, server) => {
 		return new Promise(res => {
 			bot.db.query(`SELECT * FROM banlogs WHERE server_id = ?`, [server], async (err, rows) => {
@@ -1387,10 +1400,11 @@ module.exports = {
 			var reactioncategories = await bot.utils.getReactionCategories(bot, server);
 			var reactionposts = await bot.utils.getReactionRolePosts(bot, server);
 			var starposts = await bot.utils.getStarPosts(bot, server);
-			var banlogs = await bot.utils.getBanLogs(bot, server);
+			var banlogs = await bot.utils.getRawBanLogs(bot, server);
 			var receipts = await bot.utils.getReceipts(bot, server);
 			var supportconfig = await bot.utils.getSupportConfig(bot, server);
 			var ticketposts = await bot.utils.getTicketPosts(bot, server);
+			var customcommands = await bot.utils.getCustomCommands(bot, server);
 
 			res({
 				config: config,
@@ -1400,10 +1414,11 @@ module.exports = {
 				reaction_categories: reactioncategories,
 				reaction_posts: reactionposts,
 				star_posts: starposts,
-				ban_logs: banlogs.map(b => {return {hid: b.hid, server_id: b.server_id, channel_id: b.channel_id, message_id: b.message_id}}),
+				ban_logs: banlogs,
 				receipts: receipts,
 				support_config: supportconfig,
-				ticket_posts: ticketposts
+				ticket_posts: ticketposts,
+				custom_commands: customcommands
 			});
 		})
 	},
