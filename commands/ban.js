@@ -66,7 +66,7 @@ module.exports = {
 			var conf = await bot.utils.getConfig(bot, msg.guild.id);
 			var message;
 			var channel;
-			var code = bot.utils.genCode(bot.CHARS);
+			var code = bot.utils.genCode(bot.chars);
 			if(!(succ.filter(m => m.pass).length > 0)) {
 				message = {content:'**No users were banned.**', embed: {
 					title: "Results",
