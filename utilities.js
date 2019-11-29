@@ -1470,7 +1470,7 @@ module.exports = {
 		return new Promise(async res => {
 			var cfg = await bot.utils.getSupportConfig(bot, server);
 			if(!cfg) return res({err: "No config registered; please run `hub!ticket config setup` first"});
-			var code = bot.utils.genCode(bot.CHARS);
+			var code = bot.utils.genCode(bot.chars);
 			var time = new Date();
 			try {
 				var channel = await bot.createChannel(server, `ticket-${code}`, 0, "", {
