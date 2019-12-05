@@ -135,7 +135,7 @@ module.exports = {
 					console.log(err);
 				} else {
 					if(!rows[0]) {
-						bot.db.query(`INSERT INTO configs (server_id, banlog_channel, ban_message, reprole, delist_channel, starboard, blacklist, feedback) VALUES (?,?,?,?,?,?,?)`,[srv, "", "", "", "", {}, [], {}]);
+						bot.db.query(`INSERT INTO configs (server_id, banlog_channel, ban_message, reprole, delist_channel, starboard, blacklist, feedback) VALUES (?,?,?,?,?,?,?,?)`,[srv, "", "", "", "", {}, [], {}]);
 					}
 
 					bot.db.query(`UPDATE configs SET ?=? WHERE server_id=?`,[key, val, srv], (err, rows)=> {
