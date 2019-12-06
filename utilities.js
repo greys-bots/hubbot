@@ -377,9 +377,9 @@ module.exports = {
 			})
 		})
 	},
-	deletePost: async (bot, id) => {
+	deletePost: async (bot, host, id) => {
 		return new Promise(res => {
-			bot.db.query(`DELETE FROM posts WHERE message_id=?`,[id],(err, rows)=> {
+			bot.db.query(`DELETE FROM posts WHERE host_id = ? AND message_id=?`,[host, id],(err, rows)=> {
 				if(err) {
 					console.log(err);
 					res(false);
