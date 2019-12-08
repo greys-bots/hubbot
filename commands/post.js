@@ -11,7 +11,7 @@ module.exports = {
 		var failed = [];
 
 		for(var i = 1; i < args.length; i++) {
-			var chan = msg.guild.channels.find(ch => ch.id == args[i].replace(/[<#>]/g) || ch.name == args[i]);
+			var chan = msg.guild.channels.find(ch => ch.id == args[i].replace(/[<#>]/g,"") || ch.name == args[i]);
 					   
 			if(!chan) {
 				failed.push({name: args[i], value: "Channel not found"});
