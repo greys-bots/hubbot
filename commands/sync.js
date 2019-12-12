@@ -14,8 +14,8 @@ module.exports = {
 	execute: async (bot, msg, args) => {
 		var cfg = await bot.utils.getSyncConfig(bot, msg.guild.id) || {};
 		if(args[0]) {
-			if(!cfg.sync_notifs) return msg.channel.createMessage("Please configure a notifications channel before attempting to sync with another server");
-			if(cfg.sync_id && !cfg.confirmed) return msg.channel.createMessage("You already have a pending sync request out. Please wait to change synced servers until after that request goes through");
+			if(!cfg || !cfg.sync_notifs) return msg.channel.createMessage("Please configure a notifications channel before attempting to sync with another server");
+			if(cfg.sync_id && !cfg.confirmed) return msg.channel.createMessage("You already have a pending sync request out. Please wait to change synced servers until after that request goes through, or cancel it first");
 			if(cfg.syncable) {
 				await msg.channel.createMessage("WARNING: Syncing your guild with another guild will stop others from syncing with yours. Are you sure you want to do this? (y/n)");
 				var resp;
@@ -250,7 +250,7 @@ module.exports.subcommands.setup = {
 	usage: ()=> " - Runs the syncing setup menu",
 	execute: async (bot, msg, args) => {
 		var cfg = await bot.utils.getSyncConfig(bot, msg.guild.id);
-		if(cfg.sync_id && !cfg.confirmed) return msg.channel.createMessage("You already have a pending sync request out. Please wait to change synced servers until after that request goes through");
+		if(cfg && (cfg.sync_id && !cfg.confirmed)) return msg.channel.createMessage("You already have a pending sync request out. Please wait to change sync settings until after that request goes through, or cancel it first");
 		var resp;
 		var schan;
 		var bchan;
@@ -267,7 +267,7 @@ module.exports.subcommands.setup = {
 		if(!resp || !resp[0]) return msg.channel.createMessage("ERR: timed out. Aborting...");
 		switch(resp[0].content) {
 			case "1":
-				if(cfg.syncable) {
+				if(cfg && cfg.syncable) {
 					await msg.channel.createMessage("WARNING: Syncing your guild with another guild will stop others from syncing with yours. Are you sure you want to do this? (y/n)");
 					var resp;
 					var resp = await msg.channel.awaitMessages(m => m.author.id == msg.author.id, {maxMatches: 1, time: 30000});
@@ -346,7 +346,7 @@ module.exports.subcommands.setup = {
 				}
 				break;
 			case "2":
-				if(cfg.sync_id && cfg.confirmed) {
+				if(cfg && cfg.sync_id && cfg.confirmed) {
 					await msg.channel.createMessage("WARNING: Allowing others to sync with your guild will terminate your current sync link. Are you sure you want to do this? (y/n)");
 					resp = await msg.channel.awaitMessages(m => m.author.id == msg.author.id, {maxMatches: 1, time: 30000});
 					if(!resp || !resp[0]) return msg.channel.createMessage("ERR: timed out. Aborting...");
