@@ -316,7 +316,7 @@ module.exports.subcommands.setup = {
 					message.channel.createMessage("(Couldn't add the reactions- make sure I have the `addReactions` permission! Reactions from mods should still work, however)");
 				}
 				
-				var scc = await bot.utils.addSyncMenu(bot, message.guild.id, message.channel.id, message.id, 0, msg.guild.id, cfg.sync_notifs);
+				var scc = await bot.utils.addSyncMenu(bot, message.guild.id, message.channel.id, message.id, 0, msg.guild.id, schan.id);
 				var scc2 = await bot.utils.updateSyncConfig(bot, msg.guild.id, {syncable: false, confirmed: false, sync_id: sguild.server_id, sync_notifs: schan.id, ban_notifs: bchan.id});
 
 				if(scc && scc2) msg.channel.createMessage("Confirmation sent! You'll get a notification when they accept/deny it");
