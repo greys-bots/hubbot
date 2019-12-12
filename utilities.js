@@ -226,7 +226,7 @@ module.exports = {
 			})
 		})
 	},
-	updateHostedServer: async (bot, id, data)=> {
+	updateHostedServer: async (bot, host, id, data)=> {
 		return new Promise(res=>{
 			bot.db.query(`UPDATE servers SET ${Object.keys(data).map((k) => k+"=?").join(",")} WHERE host_id = ? AND server_id=?`, [...Object.values(data), host, id], (err, rows)=>{
 				if(err) {
