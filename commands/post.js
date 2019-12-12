@@ -1,6 +1,6 @@
 module.exports = {
 	help: ()=> "Posts server embed in a given channel",
-	usage: ()=> [' [serverID] [channel] - Posts server in channel (NOTE: can be channel ID, name, or #mention)'],
+	usage: ()=> [' [serverID] [channel] [channel] [channel] ... - Posts a server in the given channel(s). NOTE: The channels can be IDs, channel-names, or #mentions'],
 	execute: async (bot, msg, args)=> {
 		var guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage('Server not found.');
@@ -22,7 +22,8 @@ module.exports = {
 				description: guild.description || "(no description provided)",
 				fields: [
 					{name: "Contact", value: contacts},
-					{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"}
+					{name: "Link", value: guild.invite ? guild.invite : "(no link provided)", inline: true},
+					{name: "Members", value: bot.guilds.find(g => g.id == args[0]) ? bot.guilds.find(g => g.id == args[0]).memberCount : "(unavailable)"}
 				],
 				thumbnail: {
 					url: guild.pic_url || ""

@@ -70,7 +70,7 @@ module.exports.subcommands.channel = {
 		else delete cfg.feedback.channel;
 		cfg.feedback.anon = cfg.feedback.anon != null ? cfg.feedback.anon : true;
 
-		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "feedback", cfg.feedback);
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, {feedback: cfg.feedback});
 		if(scc) msg.channel.createMessage("Channel updated!");
 		else msg.channel.createMessage("Something went wrong");
 	},
@@ -89,7 +89,7 @@ module.exports.subcommands.anon = {
 
 		cfg.feedback.anon = args[0] == 1 ? true : false;
 
-		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "feedback", cfg.feedback);
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, {feedback: cfg.feedback});
 		if(scc) msg.channel.createMessage("Anon setting updated!");
 		else msg.channel.createMessage("Something went wrong");
 	},

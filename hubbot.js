@@ -117,7 +117,8 @@ async function setup() {
 		hid 		TEXT,
 		server_id 	TEXT,
 		channel_id 	TEXT,
-		message_id 	TEXT
+		message_id 	TEXT,
+		users 		TEXT
 	)`)
 
 	bot.db.query(`CREATE TABLE IF NOT EXISTS receipts (
@@ -160,6 +161,26 @@ async function setup() {
 		opener 			TEXT,
 		users 			TEXT,
 		timestamp 		TEXT
+	)`)
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS sync (
+		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id 		TEXT,
+		sync_id 		TEXT,
+		confirmed 		INTEGER,
+		syncable 		INTEGER,
+		sync_notifs 	TEXT,
+		ban_notifs 		TEXT
+	)`);
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS sync_menus (
+		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id 		TEXT,
+		channel_id 		TEXT,
+		message_id 		TEXT,
+		type 			INTEGER,
+		reply_guild 	TEXT,
+		reply_channel 	TEXT
 	)`)
 
 	var files = fs.readdirSync("./commands");
@@ -405,17 +426,18 @@ bot.commands.help = {
 			if(dat) {
 				cmd = dat[0];
 				names = dat[2].split(" ");
+				var fields = [
+					{name: "**Usage**", value: `${cmd.usage().map(c => `**${bot.prefix + names.join(" ")}**${c}`).join("\n")}`},
+					{name: "**Aliases**", value: `${cmd.alias ? cmd.alias.join(", ") : "(none)"}`},
+					{name: "**Subcommands**", value: `${cmd.subcommands ?
+							Object.keys(cmd.subcommands).map(sc => `**${bot.prefix}${dat[2]} ${sc}** - ${cmd.subcommands[sc].help()}`).join("\n") : 
+							"(none)"}`}
+				];
+				if(cmd.desc) fields.push({name: "**Extra**", value: `${cmd.desc()}`});
 				embed = {
 					title: `Help | ${names.join(" - ").toLowerCase()}`,
-					description: [
-						`${cmd.help()}\n\n`,
-						`**Usage**\n${cmd.usage().map(c => `**${bot.prefix + names.join(" ")}**${c}`).join("\n")}\n\n`,
-						`**Aliases:** ${cmd.alias ? cmd.alias.join(", ") : "(none)"}\n\n`,
-						`**Subcommands**\n${cmd.subcommands ?
-							Object.keys(cmd.subcommands).map(sc => `**${bot.prefix}${sc}** - ${cmd.subcommands[sc].help()}`).join("\n") : 
-							"(none)"}`,
-						(cmd.desc ? "\n\n"+cmd.desc() : "")
-					].join(""),
+					description: `${cmd.help()}\n\n`,
+					fields: fields,
 					footer: {
 						icon_url: bot.user.avatarURL,
 						text: "Arguments like [this] are required, arguments like <this> are optional."
@@ -526,6 +548,76 @@ bot.on("messageReactionAdd", async (msg, emoji, user)=>{
 			} else {
 				await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
 			}
+		}
+	}
+
+	var smenu = await bot.utils.getSyncMenu(bot, msg.channel.guild.id, msg.channel.id, msg.id);
+	if(smenu) {
+		console.log(smenu);
+		var request = await bot.utils.getSyncRequest(bot, msg.channel.guild.id, smenu.reply_guild);
+		if(!request) return;
+		console.log(request);
+		switch(emoji.name) {
+			case "✅":
+				try {
+					var message = await bot.getMessage(msg.channel.id, msg.id);
+					if(message) {
+						await bot.editMessage(message.channel.id, message.id, {embed: {
+							title: "Sync Request",
+							description: message.embeds[0].description.split("\n")[0]+"\nUPDATE: This request has been accepted!",
+							footer: {
+								text: "Requester ID: "+smenu.reply_guild
+							},
+							color: parseInt("55aa55",16)
+						}});
+						await message.removeReactions();
+						await bot.utils.deleteSyncMenu(bot, message.channel.guild.id, message.channel.id, message.id);
+					}
+				} catch(e) {
+					console.log(e);
+					message.channel.createMessage("Notification for this request couldn't be updated; the request can still be confirmed, however");
+				}
+
+				var scc = await bot.utils.updateSyncConfig(bot, smenu.reply_guild, {confirmed: true});
+				if(scc) {
+					try {
+						await bot.createMessage(smenu.reply_channel, "Your sync request has been accepted! Make sure to use `hub!ban notifs [channel]` if you want ban notifications from this server and haven't already set it up");
+					} catch(e) {
+						console.log(e);
+						msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted and that they should use `hub!ban notifs [channel]` if they want ban notifications")
+					}
+				} else msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+				break;
+			case "❌":
+				try {
+					var message = await bot.getMessage(msg.channel.id, msg.id);
+					if(message) {
+						await bot.editMessage(message.channel.id, message.id, {embed: {
+							title: "Sync Request",
+							description: message.embeds[0].description.split("\n")[0]+"\nUPDATE: This request has been denied.",
+							footer: {
+								text: "Requester ID: "+smenu.reply_guild
+							},
+							color: parseInt("aa5555",16)
+						}});
+						await message.removeReactions();
+						await bot.utils.deleteSyncMenu(bot, message.channel.guild.id, message.channel.id, message.id);
+					}
+				} catch(e) {
+					console.log(e);
+					message.channel.createMessage("Notification for this request couldn't be updated; the request can still be denied, however");
+				}
+
+				var scc = await bot.utils.updateSyncConfig(bot, smenu.reply_guild, {confirmed: true});
+				if(scc) {
+					try {
+						await bot.createMessage(smenu.reply_channel, "Your sync request has been denied.");
+					} catch(e) {
+						console.log(e);
+						msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted")
+					}
+				} else msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+				break;
 		}
 	}
 
@@ -640,8 +732,8 @@ bot.on("messageDelete", async (msg) => {
 		await bot.utils.deleteTicketPost(bot, msg.channel.guild.id, msg.channel.id, msg.id);
 		await bot.utils.deletePost(bot, msg.channel.guild.id, msg.id);
 
-		var log = await bot.utils.getBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-		if(log) await bot.utils.removeBanLog(bot, log.hid, msg.channel.guild.id);
+		var log = await bot.utils.getRawBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
+		if(log) await bot.utils.deleteBanLog(bot, log.hid, msg.channel.guild.id);
 	} catch(e) {
 		console.log("Error deleting react post or ticket post:\n"+e.stack);
 	}
@@ -678,6 +770,72 @@ bot.on("guildDelete", async (guild) => {
 		if(!scc && bot.log_channel) bot.createMessage(bot.log_channel, "Could not delete all data for guild ID "+guild.id+" from the database");
 		else if(!scc) console.log("Could not delete all data for guild ID "+guild.id+" from the database");
 	}, 24*60*60*1000)
+})
+
+bot.on("guildCreate", async (guild) => {
+	var posts = await bot.utils.getPostsByServer(bot, guild.id);
+	if(!posts) return;
+
+	console.log("posts exist")
+	for(var i = 0; i < posts.length; i++) {
+		var message = await bot.getMessage(posts[i].channel_id, posts[i].message_id)
+		if(!message) continue;
+		var em = message.embeds[0];
+		em.fields[2].value = guild.memberCount;
+		await bot.editMessage(message.channel.id, message.id, {embed: em})
+	}
+})
+
+bot.on("guildMemberAdd", async (guild, member) => {
+	//update member count
+	await bot.utils.updatePostsByServer(bot, guild.id);
+
+	//notify current guild if the user is banned from their synced server
+	var scfg = await bot.utils.getSyncConfig(bot, guild.id);
+	if(!scfg || (!scfg.sync_id && !scfg.confirmed) || !scfg.ban_notifs) return;
+	var log = await bot.utils.getBanLogByUser(bot, scfg.sync_id, member.id);
+	if(log && log!="deleted") {
+		try {
+			await bot.createMessage(scfg.ban_notifs, {embed: {
+				title: "Ban Notification",
+				description: [
+					`New member **${member.username}#${member.discriminator}** (${member.id})`,
+					` has been banned from your currently synced server.\n`,
+					`Reason:\n`,
+					log.embed.fields[2].value
+				].join(""),
+				color: parseInt("aa5555", 16)
+			}})
+		} catch(e) {
+			console.log(e);
+		}
+	}
+})
+
+bot.on("guildMemberRemove", async (guild, member) => {
+	//also update member count
+	await bot.utils.updatePostsByServer(bot, guild.id)
+})
+
+bot.on("guildUpdate", async (guild) => {
+	var posts = await bot.utils.getPostsByServer(bot, guild.id);
+	if(!posts) return;
+
+	for(var i = 0; i < posts.length; i++) {
+		var message;
+		try {
+			message = await bot.getMessage(posts[i].channel_id, posts[i].message_id)
+		} catch(e) {
+			console.log(e);
+			continue;
+		}
+
+		var em = message.embeds[0];
+		em.title = guild.name;
+		em.thumbnail.url = guild.iconURL;
+		bot.editMessage(message.channel.id, message.id, {embed: em})
+		bot.utils.updateServer(bot, guild.id, {name: guild.name, pic_url: guild.iconURL})
+	}
 })
 
 setup();

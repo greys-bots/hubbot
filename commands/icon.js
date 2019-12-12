@@ -5,7 +5,7 @@ module.exports = {
 		var guild = await bot.utils.getServer(bot, msg.guild.id, args[0]);
 		if(!guild) return msg.channel.createMessage('Server not found');
 
-		var res = await bot.utils.updateServer(bot, msg.guild.id, args[0], 'pic_url', args.slice(1).join(" "));
+		var res = await bot.utils.updateHostedServer(bot, msg.guild.id, args[0], 'pic_url', args.slice(1).join(" "));
 		var res2 = await bot.utils.updatePosts(bot, msg.guild.id, args[0]);
 		if(res && res2) {
 			msg.channel.createMessage('Icon updated!');

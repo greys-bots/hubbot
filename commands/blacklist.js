@@ -47,7 +47,7 @@ module.exports = {
 
 		if(users.fail.length > 0) {
 			cfg.blacklist = cfg.blacklist.filter(x => !users.fail.includes(x));
-			var scc = await bot.utils.updateConfig(bot, msg.guild.id, "blacklist", cfg.blacklist)
+			var scc = await bot.utils.updateConfig(bot, msg.guild.id, {blacklist: cfg.blacklist})
 			if(!scc) msg.channel.createMessage("Something went wrong while removing invalid users from the blacklist");
 			else msg.channel.createMessage("Successfully removed invalid users from the blacklist")
 		}
@@ -70,7 +70,7 @@ module.exports.subcommands.add = {
 
 		var users = await bot.utils.verifyUsers(bot, ids);
 
-		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "blacklist", cfg.blacklist.concat(users.pass))
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, {blacklist: cfg.blacklist.concat(users.pass)})
 		if(!scc) return msg.channel.createMessage("Something went wrong");
 
 		if(users.pass.length > 0) {
@@ -97,7 +97,7 @@ module.exports.subcommands.remove = {
 		
 		var ids = args.join(" ").split(/\s+/g);
 
-		var scc = await bot.utils.updateConfig(bot, msg.guild.id, "blacklist", cfg.blacklist.filter(x => !ids.includes(x)));
+		var scc = await bot.utils.updateConfig(bot, msg.guild.id, {blacklist: cfg.blacklist.filter(x => !ids.includes(x))});
 		if(!scc) msg.channel.createMessage("Something went wrong");
 		else msg.channel.createMessage("Users removed from blacklist");
 	},
