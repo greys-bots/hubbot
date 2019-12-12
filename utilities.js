@@ -1884,7 +1884,14 @@ module.exports = {
 							 (server_id, sync_id, confirmed, syncable, sync_notifs, ban_notifs) VALUES 
 							 (?,?,?,?,?,?)`,
 							 [server, data.sync_id || "", data.confirmed || 0,  data.syncable || 0,
-							 data.sync_notifs || "", data.ban_notifs || ""]); 
+							 data.sync_notifs || "", data.ban_notifs || ""], (err, rows)=> {
+					if(err) {
+						console.log(err);
+						res(false)
+					} else {
+						res(true)
+					}
+				}) 
 			} else {
 				bot.db.query(`UPDATE sync SET ${Object.keys(data).map((k) => k+"=?").join(",")} WHERE server_id=?`,[...Object.values(data), server], (err, rows)=> {
 					if(err) {
