@@ -12,12 +12,10 @@ module.exports = {
 			invite = inv;
 			var guild = await bot.utils.getServer(bot, msg.guild.id, invite.guild.id);
 			if(!guild) return msg.channel.createMessage("Server not found");
-			bot.db.query(`UPDATE servers SET name=?, invite=?, pic_url=? WHERE server_id=?`,[
-				invite.guild.name, 
-				"https://discord.gg/"+invite.code,
-				`https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`,
-				invite.guild.id]);
-			
+			await bot.utils.updateServer(bot, msg.guild.id, invite.guild.id, 
+				{name: invite.guild.name, invite: `https://discord.gg/${invite.code}`, 
+				pic_url: `https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`})
+
 			var res = await bot.utils.updatePosts(bot, msg.guild.id, invite.guild.id);
 			if(!res) {
 				msg.channel.createMessage('Something went wrong while updating post')
@@ -45,6 +43,32 @@ module.exports.subcommands.all = {
 		var failed = [];
 
 		for(var i = 0; i < servers.length; i++) {
+			if(bot.guilds.find(g => g.id == servers[i].server_id)) {
+				var guild = bot.guilds.find(g => g.id == servers[i].server_id);
+				await bot.utils.updateServer(bot, msg.guild.id, guild.id, 
+								{name: guild.name, 
+								pic_url: guild.iconURL});
+
+			} else {
+				let id = servers[i].invite.match(/(?:.*)+\/(.*)$/) ?
+						 servers[i].invite.match(/(?:.*)+\/(.*)$/)[1] :
+						 "";
+				let invite;
+				if(id) {
+					try {
+						await bot.getInvite(id).then(async inv=>{
+							invite = inv;
+							await bot.utils.updateServer(bot, msg.guild.id, invite.guild.id, 
+								{name: invite.guild.name, invite: `https://discord.gg/${invite.code}`, 
+								pic_url: `https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`})
+
+						})
+					} catch(e) {
+						console.log(e);
+					}
+				}
+			}
+			
 			var res = await bot.utils.updatePosts(bot, msg.guild.id, servers[i].server_id);
 			if(!res) {
 				failed.push(servers[i].name);

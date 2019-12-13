@@ -832,7 +832,7 @@ bot.on("guildUpdate", async (guild) => {
 
 		var em = message.embeds[0];
 		em.title = guild.name;
-		em.thumbnail.url = guild.iconURL;
+		em.thumbnail = {url: guild.iconURL};
 		bot.editMessage(message.channel.id, message.id, {embed: em})
 		bot.utils.updateServer(bot, guild.id, {name: guild.name, pic_url: guild.iconURL})
 	}
