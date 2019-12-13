@@ -45,7 +45,7 @@ module.exports.subcommands.all = {
 		for(var i = 0; i < servers.length; i++) {
 			if(bot.guilds.find(g => g.id == servers[i].server_id)) {
 				var guild = bot.guilds.find(g => g.id == servers[i].server_id);
-				await bot.utils.updateServer(bot, msg.guild.id, guild.id, 
+				await bot.utils.updateHostedServer(bot, msg.guild.id, guild.id, 
 								{name: guild.name, 
 								pic_url: guild.iconURL});
 
@@ -58,7 +58,7 @@ module.exports.subcommands.all = {
 					try {
 						await bot.getInvite(id).then(async inv=>{
 							invite = inv;
-							await bot.utils.updateServer(bot, msg.guild.id, invite.guild.id, 
+							await bot.utils.updateHostedServer(bot, msg.guild.id, invite.guild.id, 
 								{name: invite.guild.name, invite: `https://discord.gg/${invite.code}`, 
 								pic_url: `https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`})
 
