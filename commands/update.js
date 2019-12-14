@@ -12,7 +12,7 @@ module.exports = {
 			invite = inv;
 			var guild = await bot.utils.getServer(bot, msg.guild.id, invite.guild.id);
 			if(!guild) return msg.channel.createMessage("Server not found");
-			await bot.utils.updateServer(bot, msg.guild.id, invite.guild.id, 
+			await bot.utils.updateHostedServer(bot, msg.guild.id, invite.guild.id, 
 				{name: invite.guild.name, invite: `https://discord.gg/${invite.code}`, 
 				pic_url: `https://cdn.discordapp.com/icons/${invite.guild.id}/${invite.guild.icon}.jpg?size=128`})
 
