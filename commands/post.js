@@ -22,8 +22,8 @@ module.exports = {
 				description: guild.description || "(no description provided)",
 				fields: [
 					{name: "Contact", value: contacts},
-					{name: "Link", value: guild.invite ? guild.invite : "(no link provided)", inline: true},
-					{name: "Members", value: bot.guilds.find(g => g.id == args[0]) ? bot.guilds.find(g => g.id == args[0]).memberCount : "(unavailable)"}
+					{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"},
+					{name: "Members", value: guild.guild ? guild.guild.memberCount : "(unavailable)"}
 				],
 				thumbnail: {
 					url: guild.pic_url || ""

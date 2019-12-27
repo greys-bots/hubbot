@@ -11,40 +11,19 @@ module.exports = {
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		var textconf = "";
 		if(!conf) return msg.channel.createMessage('Config not found.');
-		if(conf.banlog_channel) {
-			var chan = msg.guild.channels.find(c => c.id == conf.banlog_channel);
-			if(chan) {
-				textconf+="Banlog channel: "+chan.mention+"\n";
-			} else {
-				textconf+="Banlog channel: (not provided)\n";
-			}
-		} else {
-			textconf+="Banlog channel: (not provided)\n";
-		}
 
-		if(conf.reprole) {
-			var role = msg.guild.roles.find(rl => rl.id == conf.reprole);
-			if(role) {
-				textconf+="Represenative role: "+role.mention+"\n";
-			} else {
-				textconf+="Representative role: (not provided)\n";
-			}
-		} else {
-			textconf+="Representative role: (not provided)\n";
-		}
+		var bchan = conf.banlog_channel ? msg.guild.channels.find(c => c.id == conf.banlog_channel) : undefined;
+		var rrole = conf.reprole ?  msg.guild.roles.find(rl => rl.id == conf.reprole) : undefined;
+		var dchan = conf.delist_channel ? msg.guild.channels.find(ch => ch.id == conf.delist_channel) : undefined;
 
-		if(conf.delist_channel) {
-			chan = msg.guild.channels.find(ch => ch.id == conf.delist_channel);
-			if(chan) {
-				textconf+="Delist channel: "+chan.mention+"\n";
-			} else {
-				textconf+="Delist channel: (not provided)\n";
-			}
-		} else {
-			textconf+="Delist channel: (not provided)\n";
-		}
-
-		msg.channel.createMessage(`Current configs:\n`+textconf);
+		msg.channel.createMessage({embed: {
+			title: "Server Config",
+			fields: [
+				{name: "Ban Log Channel", value: bchan ? bchan.mention : "(not set)"},
+				{name: "Delist/Denial Log Channel", value: dchan ? dchan.mention : "(not set)"},
+				{name: "Representative Role", value: rrole ? rrole.mention : "(not set)"}
+			]
+		}})
 	},
 	alias: ['conf','cfg'],
 	subcommands: {},
