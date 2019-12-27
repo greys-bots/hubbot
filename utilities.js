@@ -261,7 +261,7 @@ module.exports = {
 					res(undefined)
 				} else {
 					if(!rows[0]) return res(undefined);
-					
+
 					rows[0].guild = bot.guilds.find(g => g.id == rows[0].server_id);
 					res(rows[0]);
 				}
@@ -1062,7 +1062,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1082,7 +1084,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1119,7 +1123,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1146,7 +1152,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1176,7 +1184,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1195,7 +1205,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);
@@ -1225,7 +1237,9 @@ module.exports = {
 				server_id: String,
 				channel_id: String,
 				message_id: String,
-				users: (val) => val ? JSON.parse(val) : undefined
+				users: (val) => val ? JSON.parse(val) : undefined,
+				reason: String,
+				timestamp: String
 			}, async (err, rows) => {
 				if(err) {
 					console.log(err);

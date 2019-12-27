@@ -270,10 +270,11 @@ module.exports.subcommands.notification = {
 module.exports.subcommands.index = {
 	execute: async (bot, msg, args) => {
 		var logs = await bot.utils.getBanLogs(bot, msg.guild.id);
-		if(!logs) return msg.channel.createMessage("No logs registered for this server");
+		if(!logs || !logs[0]) return msg.channel.createMessage("No logs registered for this server");
+		var date = new Date();
 
 		for(var i = 0; i < logs.length; i++) {
-			await bot.utils.updateBanLog(bot, logs[i].hid, msg.guild.id, {reason: logs[i].embed.fields[2].value, timestamp: logs[i].embed.timestamp})
+			await bot.utils.updateBanLog(bot, logs[i].hid, msg.guild.id, {reason: logs[i].embed && logs[i].embed.fields ? logs[i].embed.fields[2].value : "(no reason given)", timestamp: logs[i].embed ? logs[i].embed.timestamp : date.toISOString()})
 		}
 
 		msg.channel.createMessage("Ban logs indexed!");
