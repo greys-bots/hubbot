@@ -274,7 +274,7 @@ module.exports.subcommands.index = {
 		var date = new Date();
 
 		for(var i = 0; i < logs.length; i++) {
-			await bot.utils.updateBanLog(bot, logs[i].hid, msg.guild.id, {reason: logs[i].embed && logs[i].embed.fields ? logs[i].embed.fields[2].value : "(no reason given)", timestamp: logs[i].embed ? logs[i].embed.timestamp : date.toISOString()})
+			await bot.utils.updateBanLog(bot, logs[i].hid, msg.guild.id, {reason: logs[i].embed && logs[i].embed.fields && logs[i].embed.fields[2] ? logs[i].embed.fields[2].value : "(no reason given)", timestamp: logs[i].embed ? logs[i].embed.timestamp : date.toISOString()})
 		}
 
 		msg.channel.createMessage("Ban logs indexed!");
