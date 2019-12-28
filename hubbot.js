@@ -9,7 +9,7 @@ const bot 	= new Eris(process.env.TOKEN, {restMode: true});
 bot.utils 	= require('./utilities');
 bot.fetch 	= require('node-fetch');
 
-bot.db = dblite('tmp.sqlite',"-header");
+bot.db = dblite('data.sqlite',"-header");
 
 bot.chars = process.env.CHARS;
 bot.prefix = process.env.PREFIX;
