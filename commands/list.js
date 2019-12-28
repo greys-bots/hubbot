@@ -6,6 +6,7 @@ module.exports = {
 		if(!servers) return msg.channel.createMessage("Something went wrong");
 		if(!servers[0]) return msg.channel.createMessage("No servers have been indexed!");
 
+		msg.addReaction(process.env.HOURGLASS || "⌛");
 		var embeds = [];
 		for(var i = 0; i < servers.length; i++) {
 			var dat = servers[i].contact_id == undefined || servers[i].contact_id == "" ? "" : await bot.utils.verifyUsers(bot, servers[i].contact_id.split(" "));
@@ -28,6 +29,7 @@ module.exports = {
 				}
 			}})
 		}
+		msg.removeReaction(process.env.HOURGLASS || "⌛")
 
 		var message = await msg.channel.createMessage(embeds[0]);
 		if(!bot.menus) bot.menus = {};

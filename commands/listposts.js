@@ -6,6 +6,7 @@ module.exports = {
 		var servers = await bot.utils.getServers(bot, msg.guild.id);
 		if(!posts) return msg.channel.createMessage("No posts registered for this server");
 
+		msg.addReaction(process.env.HOURGLASS || "⌛")
 		if(servers && servers[0]) {
 			var unmapped = [];
 			for(var i = 0; i < posts.length; i++) {
@@ -88,6 +89,7 @@ module.exports = {
 				}})
 			}
 		}
+		msg.removeReaction(process.env.HOURGLASS || "⌛")
 	},
 	alias: ['lp'],
 	permissions: ["manageMessages"],
