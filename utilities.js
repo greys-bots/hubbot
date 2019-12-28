@@ -88,7 +88,7 @@ module.exports = {
 
 			for(var i = 0; i < ids.length; i++) {
 				try {
-					var user = await bot.getRESTUser(ids[i]);
+					var user = bot.users.find(u => u.id == ids[i]) || await bot.getRESTUser(ids[i]);
 					if(user) {
 						results.pass.push(ids[i]);
 						results.info.push(user);
@@ -309,7 +309,7 @@ module.exports = {
 					res(undefined)
 				} else {
 					if(!rows[0]) return res(undefined);
-					
+
 					rows[0].guild = bot.guilds.find(g => g.id == rows[0].server_id);
 					res(rows);
 				}
