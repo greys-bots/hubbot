@@ -260,14 +260,14 @@ module.exports.subcommands.deny = {
 }
 
 module.exports.subcommands.enable = {
-	help: ()=> "Allows others to sync to your server",
-	usage: ()=> [" - Lets others use `hub!sync [guildID]` to sync to your server"],
+	help: ()=> "[Re-]enables syncing behavior",
+	usage: ()=> [" - Starts up sync notifications and allows others to sync to your server"],
 	execute: async (bot, msg, args) => {
 		var cfg = await bot.utils.getSyncConfig(bot, msg.guild.id);
 		if(!cfg || !cfg.sync_notifs) return msg.channel.createMessage("Please run `hub!sync notifs [channel]` before enabling syncing");
 		if(cfg.enabled) return msg.channel.createMessage("Syncing is already enabled!");
 
-		var scc = await bot.utils.updateSyncConfig(bot, msg.guild.id, {syncable: true});
+		var scc = await bot.utils.updateSyncConfig(bot, msg.guild.id, {enabled: true});
 		if(scc) msg.channel.createMessage("Syncing enabled!");
 		else msg.channel.createMessage("Something went wrong");
 	},
@@ -276,13 +276,13 @@ module.exports.subcommands.enable = {
 }
 
 module.exports.subcommands.disable = {
-	help: ()=> "Allows others to sync to your server",
-	usage: ()=> [" - Lets others use `hub!sync [guildID]` to sync to your server"],
+	help: ()=> "Temporarily stops syncing behavior",
+	usage: ()=> [" - Stops others from syncing to your server and stops your server from sending sync notifications"],
 	execute: async (bot, msg, args) => {
 		var cfg = await bot.utils.getSyncConfig(bot, msg.guild.id);
 		if(!cfg.enabled) return msg.channel.createMessage("Syncing is already disabled!");
 
-		var scc = await bot.utils.updateSyncConfig(bot, msg.guild.id, {syncable: false});
+		var scc = await bot.utils.updateSyncConfig(bot, msg.guild.id, {enabled: false});
 		if(scc) msg.channel.createMessage("Syncing disabled!");
 		else msg.channel.createMessage("Something went wrong");
 	},
