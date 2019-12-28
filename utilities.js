@@ -308,6 +308,8 @@ module.exports = {
 					console.log(err);
 					res(undefined)
 				} else {
+					if(!rows[0]) return res(undefined);
+					
 					rows[0].guild = bot.guilds.find(g => g.id == rows[0].server_id);
 					res(rows);
 				}
