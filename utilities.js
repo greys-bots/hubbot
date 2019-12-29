@@ -551,7 +551,7 @@ module.exports = {
 				} else {
 					for(var i = 0; i < rows.length; i++) {
 						try {
-							await bot.deleteMessage(p.channel_id, p.message_id)
+							await bot.deleteMessage(rows[i].channel_id, rows[i].message_id)
 						} catch(e) {
 							console.log(e);
 							return res(false);

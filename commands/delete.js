@@ -3,9 +3,9 @@ module.exports = {
 	usage: ()=> [" [serverID] [serverID...] (new line) [reason] - Deletes given server(s) and all posts related."],
 	execute: async (bot, msg, args) => {
 		var guilds = args.join(" ").split("\n")[0].split(" ");
-		var embeds = [];
 		var reason = args.join(" ").split("\n").slice(1).join("\n") || "(no reason given)";
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
+		var embeds = [];
 		var logs = [];
 		var date = new Date();
 
