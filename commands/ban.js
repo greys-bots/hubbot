@@ -216,7 +216,9 @@ module.exports.subcommands.edit = {
 		if(!log) return msg.channel.createMessage("Log not found");
 		else if(log == "deleted") return msg.channel.createMessage("Log was deleted due to the message no longer existing");
 
-		var users = await bot.verifyUsers(log.users);
+		var users = await bot.verifyUsers(bot, log.users);
+		if(!users || !users.pass[0]) return msg.channel.createMessage("Something went wrong while parsing users");
+		users = users.info.map(u => u);
 
 		try {
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
