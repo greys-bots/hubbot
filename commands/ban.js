@@ -224,7 +224,7 @@ module.exports.subcommands.edit = {
 				fields: [
 				{
 					name: "**__Last Known Usernames__**",
-					value: users.map(m => `${m.info.username}#${m.info.discriminator}`).join("\n")) || "Something went wrong"
+					value: users.map(m => `${m.info.username}#${m.info.discriminator}`).join("\n") || "Something went wrong"
 				},
 				{
 					name: "**__User IDs__**",
