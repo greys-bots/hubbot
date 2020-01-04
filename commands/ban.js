@@ -216,16 +216,30 @@ module.exports.subcommands.edit = {
 		if(!log) return msg.channel.createMessage("Log not found");
 		else if(log == "deleted") return msg.channel.createMessage("Log was deleted due to the message no longer existing");
 
+		var users = await bot.verifyUsers(log.users);
+
 		try {
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
-				title: log.embed.title,
-				fields: [log.embed.fields[0], log.embed.fields[1], {
+				title: "Members Banned",
+				fields: [
+				{
+					name: "**__Last Known Usernames__**",
+					value: users.map(m => `${m.info.username}#${m.info.discriminator}`).join("\n")) || "Something went wrong"
+				},
+				{
+					name: "**__User IDs__**",
+					value: users.map(m => m.id).join("\n") || "Something went wrong"
+				},
+				{
 					name: "**__Reason__**",
-					value: reason
-				}],
-				color: log.embed.color,
-				timestamp: log.embed.timestamp,
-				footer: log.embed.footer
+					value: log.reason || "(no reason given)"
+				}
+				],
+				color: 9256253,
+				footer: {
+					text: log.hid
+				},
+				timestamp: log.timestamp
 			}})
 		} catch(e) {
 			console.log(e);
