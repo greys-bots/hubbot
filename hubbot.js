@@ -756,7 +756,6 @@ bot.on("messageReactionRemove", async (msg, emoji, user) => {
 	} catch(e) {
 		console.log("Error attempting to get message/update starboard post:\n"+e.stack);
 	}
-	
 })
 
 bot.on("messageDelete", async (msg) => {
@@ -783,7 +782,6 @@ bot.on("channelDelete", async (channel) => {
 	} catch(e) {
 		console.log("Error deleting support ticket:\n"+e.stack)
 	}
-	
 })
 
 bot.on("guildDelete", async (guild) => {

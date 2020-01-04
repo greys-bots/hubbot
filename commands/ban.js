@@ -35,17 +35,12 @@ module.exports = {
 		}
 
 		//parsing for both space delimited and new line delimited stuff
-		var membs = [];
-		var reason = [];
-		for(var i = 0; i < args.length; i++) {
-			if(args[i].match(/^\d{17,}$/)) membs.push(args[i]);
-			else if(args[i].match(/^\d{17,}\n/)) {
-				var tmp = args[i].split("\n");
-				membs = membs.concat(tmp.slice(0, tmp.length-1))
-				reason.push(tmp[tmp.length-1]);
-			} else reason.push(args[i])
-		}
-		reason = reason.join(" ");
+		//using this in an effort to retain the spacing used for the reason
+		//while also accounting for several kinds of delimiters
+		args = args.join(" ").split(/(,?\s)/);
+		var ind = args.findIndex(a => !a.match(/^\d{17,}$/) && !a.match(/\s/));
+		var membs = args.slice(0, ind).filter(x => !x.match(/\s/));
+		var reason = args.slice(ind-1).join("");
 
 		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		var b = await msg.guild.getBans()
@@ -102,11 +97,7 @@ module.exports = {
 		var channel;
 		var code = bot.utils.genCode(bot.chars);
 		var date = new Date();
-		if(succ.filter(m => m.pass).length > 0) {
-
-		} else {
-
-		}
+		
 		if(!(succ.filter(m => m.pass).length > 0)) {
 			return await msg.channel.createMessage({content:'**No users were banned.**', embed: {
 				title: "Results",

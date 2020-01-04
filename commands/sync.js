@@ -31,13 +31,9 @@ module.exports = {
 		if(args[0] == cfg.sync_id) return msg.channel.createMessage("You're already synced with that server!");
 		if(args[0] == msg.guild.id) return msg.channel.createMessage("You can't sync with yourself!");
 
-		var guild;
-		try {
-			guild = await bot.guilds.find(g => g.id == args[0]);
-		} catch(e) {
-			console.log(e);
-			return msg.channel.createMessage("Couldn't get that guild. Make sure it exists and that I'm in it");
-		}
+		var guild = await bot.guilds.find(g => g.id == args[0]);
+		if(!guild) return msg.channel.createMessage("Couldn't get that guild. Make sure it exists and that I'm in it");
+		
 		var gcfg = await bot.utils.getSyncConfig(bot, guild.id);
 		if(!gcfg || !gcfg.syncable || !gcfg.sync_notifs) return msg.channel.createMessage("That guild is not available to sync with");
 
