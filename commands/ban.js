@@ -5,7 +5,9 @@ module.exports = {
 				 " edit [banID] [new reason] - Edit the reason for a ban"],
 	execute: async (bot, msg, args)=>{
 		if(!args[0]) {
+			msg.addReaction(process.env.HOURGLASS || "⌛");
 			var logs = await bot.utils.getBanLogs(bot, msg.guild.id);
+			msg.removeReaction(process.env.HOURGLASS || "⌛");
 			if(!logs || !logs[0]) return msg.channel.createMessage("No bans registered for this server");
 			var embeds = logs.map((l,i) => {
 				l.embed.title += ` (log ${i+1}/${logs.length})`;
