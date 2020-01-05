@@ -40,7 +40,7 @@ module.exports = {
 		//using this in an effort to retain the spacing used for the reason
 		//while also accounting for several kinds of delimiters
 		args = args.join(" ").split(/(,?\s)/);
-		var ind = args.findIndex(a => !a.match(/^\d{17,}$/) && !a.match(/\s/));
+		var ind = args.findIndex(a => !a.replace(/[<@!>]/g,"").match(/^(?:<@)?!?\d{17,}$>?/) && !a.match(/\s/));
 		var membs = args.slice(0, ind).filter(x => !x.match(/\s/));
 		var reason = args.slice(ind-1).join("");
 
@@ -56,17 +56,19 @@ module.exports = {
 		for(var i = 0; i < membs.length; i++) {
 			var u;
 			try {
-				u = await bot.getRESTUser(membs[i])
+				u = await bot.getRESTUser(membs[i].replace(/[<@!>]/g,""));
 			} catch(e) {
 				console.log(e);
-				succ.push({id:membs[i],pass:false,reason:"User does not exist."});
+				succ.push({id:membs[i].replace(/[<@!>]/g,""), pass:false, reason:"User does not exist."});
+				continue;
 			}
+
 			if(b){
-				if(b.find(x => x.user.id == membs[i])){
-					succ.push({id:membs[i],pass:true,info:u});
+				if(b.find(x => x.user.id == u.id)){
+					succ.push({id: u.id, pass: true, info: u});
 				} else {
-					if(msg.guild.members.find(mb => mb.id == membs[i]) && conf.ban_message) {
-						var ch = await bot.getDMChannel(membs[i]);
+					if(msg.guild.members.find(mb => mb.id == u.id) && conf.ban_message) {
+						var ch = await bot.getDMChannel(u.id);
 						if(ch) {
 							try {
 								ch.createMessage(conf.ban_message);
@@ -75,12 +77,12 @@ module.exports = {
 							}
 						}
 					}
-					bot.banGuildMember(msg.guild.id,membs[i],0,reason || "Banned through command.");
-					succ.push({id:membs[i],pass:true,info:u})
+					bot.banGuildMember(msg.guild.id, u.id, 0, reason || "Banned through command.");
+					succ.push({id :u.id, pass: true, info: u})
 				}
 			} else {
-				if(msg.guild.members.find(mb => mb.id == membs[i]) && conf.banmsg) {
-					var ch = await bot.getDMChannel(membs[i]);
+				if(msg.guild.members.find(mb => mb.id == u.id) && conf.banmsg) {
+					var ch = await bot.getDMChannel(u.id);
 					if(ch) {
 						try {
 							ch.createMessage(conf.ban_message);
@@ -89,8 +91,8 @@ module.exports = {
 						}
 					}
 				}
-				bot.banGuildMember(msg.guild.id,membs[i],0,reason || "Banned through command.");
-				succ.push({id:membs[i],pass:true,info:u})
+				bot.banGuildMember(msg.guild.id, u.id, 0, reason || "Banned through command.");
+				succ.push({id: u.id, pass: true, info: u})
 			}
 		}
 
