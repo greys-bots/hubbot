@@ -1,21 +1,18 @@
 const Eris 		= require("eris-additions")(require("eris"));
+const Discord 	= require("discord.js");
 const dblite 	= require("dblite");
-const fs 		= require("fs");
 
 require('dotenv').config();
 
 const bot 	= new Eris(process.env.TOKEN, {restMode: true});
 
-bot.utils 	= require('./utilities');
 bot.fetch 	= require('node-fetch');
-
+bot.fs 		= require('fs');
 bot.db = dblite('data.sqlite',"-header");
 
 bot.chars = process.env.CHARS;
 bot.prefix = process.env.PREFIX;
 bot.log_channel = process.env.LOG_CHANNEL;
-
-bot.commands	= {};
 
 bot.customActions = [
 	{name: "member.hr", replace: "msg.member.hasRole"},
@@ -39,6 +36,49 @@ bot.logVars = {
 }
 
 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+
+const recursivelyReadDirectory = function(dir) {
+	var results = [];
+	var files = bot.fs.readdirSync(dir, {withFileTypes: true});
+	for(file of files) {
+		if(file.isDirectory()) {
+			results = results.concat(recursivelyReadDirectory(dir+"/"+file.name));
+		} else {
+			results.push(dir+"/"+file.name);
+		}
+	}
+
+	return results;
+}
+
+const registerCommand = function({command, module, name} = {}) {
+	if(!command) return;
+	command.module = module;
+	command.name = name;
+	module.commands.set(name, command);
+	bot.commands.set(name, command);
+	bot.aliases.set(name, name);
+	if(command.alias) command.alias.forEach(a => bot.aliases.set(a, name));
+	
+	if(command.subcommands) {
+		var subcommands = command.subcommands;
+		command.subcommands = new Discord.Collection();
+		Object.keys(subcommands).forEach(c => {
+			var cmd = subcommands[c];
+			cmd.name = `${command.name} ${c}`;
+			cmd.parent = command;
+			cmd.module = command.module;
+			if(!command.sub_aliases) command.sub_aliases = new Discord.Collection();
+			command.sub_aliases.set(c, c);
+			if(cmd.alias) cmd.alias.forEach(a => command.sub_aliases.set(a, c));
+			if(command.permissions && !cmd.permissions) cmd.permissions = command.permissions;
+			if(command.guildOnly != undefined && cmd.guildOnly == undefined)
+				cmd.guildOnly = command.guildOnly;
+			command.subcommands.set(c, cmd);
+		})
+	}
+	return command;
+}
 
 async function setup() {
 	//database schema
@@ -151,12 +191,21 @@ async function setup() {
         visibility  INTEGER
 	)`);
 
-	bot.db.query(`CREATE TABLE IF NOT EXISTS starboard (
+	bot.db.query(`CREATE TABLE IF NOT EXISTS starboards (
 		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id	BIGINT,
-		channel_id	BIGINT,
-		message_id 	BIGINT,
-		original_id BIGINT,
+		server_id 	TEXT,
+		channel_id	TEXT,
+		emoji		TEXT,
+		override	INTEGER,
+		tolerance	INTEGER
+	)`);
+
+	bot.db.query(`CREATE TABLE IF NOT EXISTS starred_messages (
+		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
+		server_id	TEXT,
+		channel_id	TEXT,
+		message_id 	TEXT,
+		original_id TEXT,
 		emoji 		TEXT
 	)`);
 
@@ -206,14 +255,38 @@ async function setup() {
 		timestamp 		TEXT
 	)`);
 
-	//command loading
-	var files = fs.readdirSync("./commands");
-	await Promise.all(files.map(f => {
-		bot.commands[f.slice(0,-3)] = require("./commands/"+f);
-		return new Promise((res,rej)=>{
-			setTimeout(res("a"),100)
-		})
-	})).then(()=> console.log("finished loading commands."));
+	files = bot.fs.readdirSync("./events");
+	files.forEach(f => {
+		bot.on(f.slice(0,-3), (...args) => require("./events/"+f)(...args,bot));
+	});
+
+	bot.utils = {};
+	files = bot.fs.readdirSync("./utils");
+	files.forEach(f => Object.assign(bot.utils, require("./utils/"+f)));
+
+	files = recursivelyReadDirectory("./commands");
+
+	bot.modules = new Discord.Collection();
+	bot.commands = new Discord.Collection();
+	bot.aliases = new Discord.Collection();
+	for(f of files) {
+		var path_frags = f.replace("./commands/","").split(/(?:\\|\/)/);
+		var mod = path_frags.length > 1 ? path_frags[path_frags.length - 2] : "Unsorted";
+		var file = path_frags[path_frags.length - 1];
+		if(!bot.modules.get(mod.toLowerCase())) {
+			var mod_info = require(file == "__mod.js" ? f : f.replace(file, "__mod.js"));
+			bot.modules.set(mod.toLowerCase(), {...mod_info, name: mod, commands: new Discord.Collection()})
+		}
+		if(file == "__mod.js") continue;
+
+		mod = bot.modules.get(mod.toLowerCase());
+		if(!mod) {
+			console.log("Whoopsies");
+			continue;
+		}
+		
+		registerCommand({command: require(f), module: mod, name: file.slice(0, -3).toLowerCase()})
+	}
 }
 
 bot.formatTime = (date) => {
@@ -228,46 +301,27 @@ bot.asyncForEach = async (arr, bot, msg, args, cb) => {
 	  }
 }
 
-bot.parseCommand = async function(bot, msg, args, command) {
-	return new Promise(async (res,rej)=>{
-		var commands;
-		var cmd;
-		var name = "";
-		if(command) {
-			commands = command.subcommands || [];
-		} else {
-			commands = bot.commands;
-		}
+bot.parseCommand = async function(bot, msg, args) {
+	if(!args[0]) return undefined;
+	
+	var command = bot.commands.get(bot.aliases.get(args[0].toLowerCase()));
+	if(!command) return {command, nargs: args};
 
-		if(args[0] && commands[args[0].toLowerCase()]) {
-			cmd = commands[args[0].toLowerCase()];
-			name = args[0].toLowerCase();
-			args = args.slice(1);
-		} else if(args[0] && Object.values(commands).find(cm => cm.alias && cm.alias.includes(args[0].toLowerCase()))) {
-			cmd = Object.values(commands).find(cm => cm.alias && cm.alias.includes(args[0].toLowerCase()));
-			name = args[0].toLowerCase();
-			args = args.slice(1);
-		} else if(!cmd) {
-			res(undefined);
-		}
+	args.shift();
 
-		if(cmd && cmd.subcommands && args[0]) {
-			let data = await bot.parseCommand(bot, msg, args, cmd);
-			if(data) {
-				cmd = data[0]; args = data[1];
-				name += " "+data[2];
-			}
-		}
+	if(args[0] && command.subcommands && command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()))) {
+		command = command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()));
+		args.shift();
+	}
 
-		res([cmd, args, name]);
-	})
+	return {command, nargs: args};
 }
 
 bot.parseCustomCommand = async function(bot, msg, args) {
 	return new Promise(async res => {
 		if(!args || !args[0]) return res(undefined);
 		if(!msg.guild) return res(undefined);
-		var name = args.shift();
+		var name = args.shift().toLowerCase();
 		var cmd = await bot.utils.getCustomCommand(bot, msg.guild.id, name);
 		if(!cmd) return res(undefined);
 
@@ -284,7 +338,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							condition = condition.replace(n, ca.replace)
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${ac};`
 						), action.success, action.fail]);
 						break;
@@ -299,7 +353,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							fls = fls.replace(n, ca.replace);
 						})
 
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${tr};
 							 else ${fls}`
 						), action.success, action.fail]);
@@ -310,7 +364,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
@@ -320,7 +374,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
@@ -330,11 +384,10 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
-
 				}
 			} else {
 				switch(action.type) {
@@ -346,7 +399,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							condition = condition.replace(n, ca.replace)
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${ac};`
 						), action.success, action.fail]);
 						break;
@@ -361,7 +414,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							fls = fls.replace(n, ca.replace);
 						})
 
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${tr};
 							 else ${fls}`
 						), action.success, action.fail]);
@@ -373,7 +426,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
@@ -385,7 +438,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
@@ -397,19 +450,19 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
 						break;
 				}
-			}
-			
+			}			
 		})
 
 		cmd.execute = async (bot, msg, args, cmd) => {
+			console.log("executing...");
 			let msgs = [];
-			await bot.asyncForEach(cmd.newActions, bot, msg, args, async (bot, msg, args, a) => {
+			await bot.utils.asyncForEach(cmd.newActions, async (a) => {
 				try {
 					await a[0].call(null, bot, msg, args);
 				} catch (e) {
@@ -428,450 +481,15 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 						return new Promise(res => res(""))
 					}))
 				}, 2000)
-				
 			}
-			
 		}
 
-		res([cmd, args, name])
+		res({command: cmd, nargs: args, name})
 	})
-}
-
-bot.commands.help = {
-	help: ()=> "Displays help embed.",
-	usage: ()=> [" - Displays help for all commands.",
-				" [command] - Displays help for specfic command."],
-	execute: async (bot, msg, args) => {
-		let cmd;
-		let names;
-		let embed;
-		if(args[0]) {
-			let dat = await bot.parseCommand(bot, msg, args);
-			if(dat) {
-				cmd = dat[0];
-				names = dat[2].split(" ");
-				var fields = [
-					{name: "**Usage**", value: `${cmd.usage().map(c => `**${bot.prefix + names.join(" ")}**${c}`).join("\n")}`},
-					{name: "**Aliases**", value: `${cmd.alias ? cmd.alias.join(", ") : "(none)"}`},
-					{name: "**Subcommands**", value: `${cmd.subcommands ?
-							Object.keys(cmd.subcommands).map(sc => `**${bot.prefix}${dat[2]} ${sc}** - ${cmd.subcommands[sc].help()}`).join("\n") : 
-							"(none)"}`}
-				];
-				if(cmd.desc) fields.push({name: "**Extra**", value: `${cmd.desc()}`});
-				embed = {
-					title: `Help | ${names.join(" - ").toLowerCase()}`,
-					description: `${cmd.help()}\n\n`,
-					fields: fields,
-					footer: {
-						icon_url: bot.user.avatarURL,
-						text: "Arguments like [this] are required, arguments like <this> are optional."
-					}
-				}
-			} else {
-				msg.channel.createMessage("Command not found.")
-			}
-		} else {
-			embed = {
-				title: `HubBot - help`,
-				description:
-					`**Commands**\n${Object.keys(bot.commands)
-									.map(c => `**${bot.prefix + c}** - ${bot.commands[c].help()}`)
-									.join("\n")}\n\n`,
-				footer: {
-					icon_url: bot.user.avatarURL,
-					text: "Arguments like [this] are required, arguments like <this> are optional."
-				}
-			}
-		}
-
-		msg.channel.createMessage({embed: embed});
-	},
-	alias: ["h"]
 }
 
 bot.on("ready",()=>{
 	console.log("Ready");
-})
-
-bot.on("messageCreate",async (msg)=>{
-	if(msg.author.bot) return;
-	// if(!msg.guild) return msg.channel.createMessage("This bot should be used in guilds only");
-	var prefix = new RegExp("^"+bot.prefix, "i");
-	if(!msg.content.toLowerCase().match(prefix)) return;
-	let args = msg.content.replace(prefix, "").split(" ");
-	let cmd = await bot.parseCommand(bot, msg, args);
-	if(!cmd) cmd = await bot.parseCustomCommand(bot, msg, args);
-	console.log(cmd);
-	if(cmd) {
-
-		var cfg = msg.guild ? await bot.utils.getConfig(bot, msg.guild.id) : {};
-		if(cfg && cfg.blacklist && cfg.blacklist.includes(msg.author.id)) return msg.channel.createMessage("You have been banned from using this bot.");
-		if(!cmd[0].permissions || (cmd[0].permissions && cmd[0].permissions.filter(p => msg.member.permission.has(p)).length == cmd[0].permissions.length)) {
-			cmd[0].execute(bot, msg, cmd[1], cmd[0]);
-		} else {
-			msg.channel.createMessage("You do do not have permission to do this.")
-		}
-		
-	}
-	else msg.channel.createMessage("Command not found.");
-});
-
-bot.on("messageReactionAdd", async (msg, emoji, user)=>{
-	if(bot.user.id == user) return;
-
-	if(bot.menus && bot.menus[msg.id] && bot.menus[msg.id].user == user) {
-		try {
-			await bot.menus[msg.id].execute(bot, msg, emoji);
-		} catch(e) {
-			console.log(e);
-			writeLog(e);
-			msg.channel.createMessage("Something went wrong: "+e.message);
-		}
-	}
-
-	if(!msg.channel.guild) return;
-
-	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
-	if(cfg && cfg.blacklist && cfg.blacklist.includes(user)) return;
-	if(cfg && cfg.starboard && cfg.starboard.boards) {
-		var em;
-		if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
-		else em = emoji.name; 
-		var cf = cfg.starboard.boards.find(c => c.emoji == em);
-		if(cf) {
-			var sbpost = await bot.utils.getStarPost(bot, msg.channel.guild.id, msg.id, em);
-			var message = await bot.getMessage(msg.channel.id, msg.id);
-			if(!sbpost) {
-				var chan = cf.channel;
-				var member = msg.channel.guild.members.find(m => m.id == user);
-				var tolerance = cf.tolerance ? cf.tolerance : (cfg.starboard.tolerance || 2);
-				if((member.permission.has("manageMessages") && cfg.starboard.override) || (message.reactions[em.replace(/^:/,"")].count === tolerance)) {
-					bot.utils.starMessage(bot, message, chan, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
-				}
-			} else {
-				await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")].count})
-			}
-		}
-	}
-
-	var message;
-	try {
-		message = await bot.getMessage(msg.channel.id, msg.id);
-	} catch(e) {
-		if(!(e.stack.includes("Unknown Message") && emoji.name == "\u23f9")) console.log(e);
-		return;
-	}
-
-	var smenu = await bot.utils.getSyncMenu(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-	if(smenu) {
-		if(!["✅", "❌"].includes(emoji.name)) return;
-		var request = await bot.utils.getSyncRequest(bot, msg.channel.guild.id, smenu.reply_guild);
-		if(!request) return;
-		if(message) var embed = message.embeds[0];
-		var member = await bot.utils.fetchUser(bot, user);
-		switch(emoji.name) {
-			case "✅":
-				if(request.confirmed) {
-					try {
-						await message.removeReaction("✅", user);
-					} catch(e) {
-						console.log(e)
-					}
-					return;
-				}
-
-				try {
-					if(embed) {
-						embed.fields[2].value = "Confirmed";
-						embed.color = parseInt("55aa55", 16);
-						embed.author = {
-							name: `Accepted by: ${member.username}#${member.discriminator} (${member.id})`,
-							icon_url: member.avatarURL
-						}
-						await bot.editMessage(message.channel.id, message.id, {embed: embed});
-						await message.removeReactions();
-					}
-				} catch(e) {
-					console.log(e);
-					message.channel.createMessage("Notification for this request couldn't be updated; the request can still be confirmed, however");
-				}
-
-				var scc = await bot.utils.updateSyncConfig(bot, smenu.reply_guild, {confirmed: true});
-				if(scc) {
-					try {
-						await bot.createMessage(smenu.reply_channel, {embed: {
-							title: "Sync Acceptance",
-							description: `Your sync request with ${message.guild.name} has been accepted!`,
-							color: parseInt("55aa55", 16),
-							timestamp: new Date().toISOString()
-						}});
-					} catch(e) {
-						console.log(e);
-						message.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted and that they should use `hub!ban notifs [channel]` if they want ban notifications")
-					}
-				} else message.channel.createMessage("Something went wrong while updating the request. Please try again");
-				break;
-			case "❌":
-				if(!request.confirmed) {
-					try {
-						await message.removeReaction("❌", user);
-					} catch(e) {
-						console.log(e)
-					}
-					return;
-				}
-
-				try {
-					if(embed) {
-						embed.fields[2].value = "Denied";
-						embed.color = parseInt("aa5555", 16);
-						embed.author = {
-							name: `Denied by: ${member.username}#${member.discriminator} (${member.id})`,
-							icon_url: member.avatarURL
-						}
-						await bot.editMessage(message.channel.id, message.id, {embed: embed});
-						await message.removeReactions();
-						await bot.utils.deleteSyncMenu(bot, message.channel.guild.id, message.channel.id, message.id);
-					}
-				} catch(e) {
-					console.log(e);
-					message.channel.createMessage("Notification for this request couldn't be updated; the request can still be denied, however");
-				}
-
-				var scc = await bot.utils.updateSyncConfig(bot, smenu.reply_guild, {confirmed: true});
-				if(scc) {
-					try {
-						await bot.createMessage(smenu.reply_channel, {embed: {
-							title: "Sync Denial",
-							description: `Your sync request with ${message.guild.name} has been denied.${request.confirmed ? " You'll no longer receive notifications from this server." : ""}`,
-							color: parseInt("aa5555", 16),
-							timestamp: new Date().toISOString()
-						}});
-					} catch(e) {
-						console.log(e);
-						message.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted")
-					}
-				} else message.channel.createMessage("Something went wrong while updating the request. Please try again");
-				break;
-		}
-	}
-
-	var post = await bot.utils.getReactionRolePost(bot, msg.channel.guild.id, msg.id);
-	if(post) {
-		var role = post.roles.find(r => (emoji.id ? r.emoji == `:${emoji.name}:${emoji.id}` || r.emoji == `a:${emoji.name}:${emoji.id}` : r.emoji == emoji.name));
-		if(!role) return;
-		var rl = msg.channel.guild.roles.find(r => r.id == role.role_id);
-		if(!rl) return;
-		var member = msg.channel.guild.members.find(m => m.id == user);
-		if(!member) return;
-		if(member.roles.includes(rl.id)) {
-			try {
-				msg.channel.guild.removeMemberRole(user, rl.id);
-				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
-			} catch(e) {
-				console.log(e);
-				await bot.getDMChannel(user).then(ch => {
-					ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-				})
-			}
-		} else {
-			try {
-				msg.channel.guild.addMemberRole(user, rl.id);
-				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.id ? `${emoji.name}:${emoji.id}` : emoji.name, user);
-			} catch(e) {
-				console.log(e);
-				await bot.getDMChannel(user).then(ch => {
-					ch.createMessage(`Couldn't give you role **${rl.name}** in ${msg.channel.guild.name}. Please let a moderator know that something went wrong`)
-				})
-			}
-		}
-	}
-
-	if(emoji.name == "\u2753" || emoji.name == "\u2754") {
-		var log = await bot.utils.getBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-		if(!log) return;
-
-		var ch = await bot.getDMChannel(user);
-		if(!ch) return;
-
-		var receipt = await bot.utils.getReceipt(bot, log.hid, msg.channel.guild.id);
-		if(!receipt) return ch.channel.createMessage("No receipt has been registered for that ban :(");
-
-		var users = await bot.utils.verifyUsers(bot, log.embed.fields[1].value.split("\n"));
-
-		try {
-			ch.createMessage({embed: {
-				title: "Ban Receipt",
-				description: receipt.message,
-				fields: [
-					{name: "Users Banned", value: users.info.map(u => `${u.username}#${u.discriminator} (${u.id})`).concat(users.fail.map(u => `${u} - Member deleted?`)).join("\n")},
-					{name: "Reason", value: log.embed.fields[2].value}
-				]
-			}})
-			bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
-		} catch(e) {
-			console.log(e);
-		}
-	}
-
-	var tpost = await bot.utils.getTicketPost(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-	if(tpost) {
-		await bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
-		var ch = await bot.getDMChannel(user);
-		var tickets = await bot.utils.getSupportTicketsByUser(bot, msg.channel.guild.id, user);
-		if(tickets && tickets.length >= 5) {
-			try {
-				return ch.createMessage("Couldn't open ticket: you already have 5 open for that server")
-			} catch(e) {
-				console.log(e);
-				return;
-			}
-		}
-		var us = await bot.utils.fetchUser(bot, user);
-		var ticket = await bot.utils.createSupportTicket(bot, msg.channel.guild.id, us);
-		if(!ticket.hid) {
-			try {
-				ch.createMessage("Couldn't open your support ticket:\n"+ticket.err);
-			} catch(e) {
-				console.log(e);
-				return;
-			}	
-		}
-	}
-});
-
-bot.on("messageReactionRemove", async (msg, emoji, user) => {
-	if(bot.user.id == user) return;
-
-	var cfg = await bot.utils.getConfig(bot, msg.channel.guild.id);
-	if(cfg && cfg.blacklist && cfg.blacklist.includes(user)) return;
-
-	var em;
-	if(emoji.id) em = `:${emoji.name}:${emoji.id}`;
-	else em = emoji.name;
-
-	try {
-		var message = await bot.getMessage(msg.channel.id, msg.id);
-		await bot.utils.updateStarPost(bot, msg.channel.guild.id, msg.id, {emoji: em, count: message.reactions[em.replace(/^:/,"")] ? message.reactions[em.replace(/^:/,"")].count : 0})
-	} catch(e) {
-		console.log("Error attempting to get message/update starboard post:\n"+e.stack);
-	}
-})
-
-bot.on("messageDelete", async (msg) => {
-	if(!msg.channel.guild) return;
-	try {
-		bot.db.query(`DELETE FROM reactposts WHERE server_id=? AND channel_id=? AND message_id=?`,[msg.channel.guild.id, msg.channel.id, msg.id]);
-		await bot.utils.deleteTicketPost(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-		await bot.utils.deletePost(bot, msg.channel.guild.id, msg.id);
-
-		var log
-		log = await bot.utils.getRawBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-		if(log) await bot.utils.deleteBanLog(bot, log.hid, msg.channel.guild.id);
-
-		log = await bot.utils.getRawListingLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-		if(log) await bot.utils.deleteListingLog(bot, log.hid, msg.channel.guild.id);
-	} catch(e) {
-		console.log("Error deleting a log:\n"+e.stack);
-	}
-})
-
-bot.on("channelDelete", async (channel) => {
-	try {
-		await bot.utils.deleteSupportTicket(bot, channel.guild.id, channel.id);
-	} catch(e) {
-		console.log("Error deleting support ticket:\n"+e.stack)
-	}
-})
-
-bot.on("guildDelete", async (guild) => {
-	try {
-		var data = await bot.utils.getExportData(bot, guild.id);
-		var ch = await bot.getDMChannel(guild.ownerID);
-		if(!ch) return;
-		ch.createMessage(["Hi! I'm sending you this because you removed me from your server. ",
-			"After 24 hours, all the data I have indexed for it will be deleted. ",
-			"If you invite me back after 24 hours are up and would like to start up ",
-			"where you left off, you can use this file to do so!",
-			"\nNOTE: Support tickets and feedback tickets WILL NOT BE SAVED.",
-			" These are too complex/abusable to export and import,", 
-			" and thus will be deleted once the 24 hours are up."].join(""),
-			[{file: Buffer.from(JSON.stringify(data)), name: "hub_data.json"}]);
-	} catch(e) {
-		console.log("Error attempting to export/deliver data after being kicked:\n"+e.stack)
-	}
-
-	setTimeout(async ()=> {
-		var scc = await bot.utils.deleteAllData(bot, guild.id);
-		if(!scc && bot.log_channel) bot.createMessage(bot.log_channel, "Could not delete all data for guild ID "+guild.id+" from the database");
-		else if(!scc) console.log("Could not delete all data for guild ID "+guild.id+" from the database");
-	}, 24*60*60*1000)
-})
-
-bot.on("guildCreate", async (guild) => {
-	var posts = await bot.utils.getPostsByServer(bot, guild.id);
-	if(!posts) return;
-
-	console.log("posts exist")
-	for(var i = 0; i < posts.length; i++) {
-		var message = await bot.getMessage(posts[i].channel_id, posts[i].message_id)
-		if(!message) continue;
-		var em = message.embeds[0];
-		em.fields[2].value = guild.memberCount;
-		await bot.editMessage(message.channel.id, message.id, {embed: em})
-	}
-})
-
-bot.on("guildMemberAdd", async (guild, member) => {
-	//update member count
-	await bot.utils.updatePostsByServer(bot, guild.id);
-
-	//notify current guild if the user is banned from their synced server
-	var scfg = await bot.utils.getSyncConfig(bot, guild.id);
-	if(!scfg || (!scfg.sync_id && !scfg.confirmed) || !scfg.ban_notifs) return;
-	var log = await bot.utils.getBanLogByUser(bot, scfg.sync_id, member.id);
-	if(log && log!="deleted") {
-		try {
-			await bot.createMessage(scfg.ban_notifs, {embed: {
-				title: "Ban Notification",
-				description: [
-					`New member **${member.username}#${member.discriminator}** (${member.id})`,
-					` has been banned from your currently synced server.\n`,
-					`Reason:\n`,
-					log.embed.fields[2].value
-				].join(""),
-				color: parseInt("aa5555", 16)
-			}})
-		} catch(e) {
-			console.log(e);
-		}
-	}
-})
-
-bot.on("guildMemberRemove", async (guild, member) => {
-	//also update member count
-	await bot.utils.updatePostsByServer(bot, guild.id)
-})
-
-bot.on("guildUpdate", async (guild) => {
-	var posts = await bot.utils.getPostsByServer(bot, guild.id);
-	if(!posts) return;
-
-	for(var i = 0; i < posts.length; i++) {
-		var message;
-		try {
-			message = await bot.getMessage(posts[i].channel_id, posts[i].message_id)
-		} catch(e) {
-			console.log(e);
-			continue;
-		}
-
-		var em = message.embeds[0];
-		em.title = guild.name;
-		em.thumbnail = {url: guild.iconURL};
-		bot.editMessage(message.channel.id, message.id, {embed: em})
-		bot.utils.updateServer(bot, guild.id, {name: guild.name, pic_url: guild.iconURL})
-	}
 })
 
 setup();

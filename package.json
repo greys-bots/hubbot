@@ -5,6 +5,7 @@
   "main": "hubbot.js",
   "dependencies": {
     "dblite": "^1.0.1",
+    "discord.js": "^11.5.1",
     "dotenv": "^7.0.0",
     "eris": "github:abalabahaha/eris#dev",
     "eris-additions": "^1.2.5",
