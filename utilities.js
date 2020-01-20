@@ -123,7 +123,7 @@ module.exports = {
 				bot.menus[m.id] = this;
 				break;
 			case "\u23f9":
-				await bot.deleteMessage(m.channel.id, m.id);
+				await bot.removeMessageReactions(m.channel.id, m.id);
 				delete bot.menus[m.id];
 				break;
 		}
