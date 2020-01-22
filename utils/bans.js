@@ -298,15 +298,15 @@ module.exports = {
 	},
 	handleBanReactions: async (bot, msg, emoji, user) => {
 		return new Promise(async res => {
+			if(!["❓","❔"].includes(emoji.name)) return;
+			var log = await bot.utils.getBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
+			if(!log) return;
+
 			try {
 				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
 			} catch(e) {
 				console.log(e);
 			}
-			
-			if(!["❓","❔"].includes(emoji.name)) return;
-			var log = await bot.utils.getBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-			if(!log) return;
 
 			var ch = await bot.getDMChannel(user);
 			if(!ch) return;
