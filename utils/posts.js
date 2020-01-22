@@ -116,10 +116,11 @@ module.exports = {
 					}})
 				} catch(e) {
 					console.log(e);
-					if(e.message.includes("Unknown Message")) await bot.utils.deletePost(bot, posts[i].host_id, posts[i].message_id);
+					if(e.message.includes("Unknown Message") || e.message.includes("Unknown Channel")) 
+						await bot.utils.deletePost(bot, posts[i].host_id, posts[i].message_id);
 				}
-				
 			}
+
 			res(true);
 		})
 	},

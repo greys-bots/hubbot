@@ -145,10 +145,10 @@ module.exports = {
 	handleSyncReactions: async (bot, msg, emoji, user) => {
 		return new Promise(async res => {
 			var smenu = await bot.utils.getSyncMenu(bot, msg.channel.guild.id, msg.channel.id, msg.id);
-			if(!smenu) return;
+			if(!smenu) return res(true);
 			if(!["✅", "❌"].includes(emoji.name)) return;
 			var request = await bot.utils.getSyncRequest(bot, msg.channel.guild.id, smenu.reply_guild);
-			if(!request) return;
+			if(!request) return res(true);
 			if(msg) var embed = msg.embeds[0];
 			var member = await bot.utils.fetchUser(bot, user);
 			switch(emoji.name) {
@@ -157,7 +157,8 @@ module.exports = {
 						try {
 							await msg.removeReaction("✅", user);
 						} catch(e) {
-							console.log(e)
+							console.log(e);
+							res(false);
 						}
 						return;
 					}
@@ -189,9 +190,13 @@ module.exports = {
 							}});
 						} catch(e) {
 							console.log(e);
-							msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted and that they should use `hub!ban notifs [channel]` if they want ban notifications")
+							msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted and that they should use `hub!ban notifs [channel]` if they want ban notifications");
+							res(false);
 						}
-					} else msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+					} else {
+						msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+						res(false);
+					}
 					break;
 				case "❌":
 					if(!request.confirmed) {
@@ -199,6 +204,7 @@ module.exports = {
 							await msg.removeReaction("❌", user);
 						} catch(e) {
 							console.log(e)
+							res(false);
 						}
 						return;
 					}
@@ -218,6 +224,7 @@ module.exports = {
 					} catch(e) {
 						console.log(e);
 						msg.channel.createMessage("Notification for this request couldn't be updated; the request can still be denied, however");
+						res(false);
 					}
 
 					var scc = await bot.utils.updateSyncConfig(bot, smenu.reply_guild, {confirmed: true});
@@ -231,11 +238,16 @@ module.exports = {
 							}});
 						} catch(e) {
 							console.log(e);
-							msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted")
+							msg.channel.createMessage("Couldn't send the requester the acceptance notification; please make sure they're aware that their server was accepted");
+							res(false);
 						}
-					} else msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+					} else {
+						msg.channel.createMessage("Something went wrong while updating the request. Please try again");
+						res(false);
+					}
 					break;
 			}
+			res(true);
 		})
 	}
 }

@@ -324,6 +324,7 @@ module.exports = {
 					return ch.createMessage("Couldn't open ticket: you already have 5 open for that server")
 				} catch(e) {
 					console.log(e);
+					res(false);
 					return;
 				}
 			}
@@ -334,9 +335,11 @@ module.exports = {
 					ch.createMessage("Couldn't open your support ticket:\n"+ticket.err);
 				} catch(e) {
 					console.log(e);
+					res(false);
 					return;
 				}	
 			}
+			res(true);
 		});
 	}
 }

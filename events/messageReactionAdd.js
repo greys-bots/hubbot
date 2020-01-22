@@ -29,13 +29,13 @@ module.exports = async (msg, emoji, user, bot) => {
 
 	if(emoji.id) emoji.name = `:${emoji.name}:${emoji.id}`;
 
-	await bot.utils.handleStarboardReactions(bot, msg, emoji, user);
+	bot.utils.handleStarboardReactions(bot, msg, emoji, user);
 
-	await bot.utils.handleSyncReactions(bot, msg, emoji, user);
+	bot.utils.handleSyncReactions(bot, msg, emoji, user);
 
-	await bot.utils.handleReactPostReactions(bot, msg, emoji, user);
+	bot.utils.handleReactPostReactions(bot, msg, emoji, user);
 
-	await bot.utils.handleBanReactions(bot, msg, emoji, user);
+	bot.utils.handleBanReactions(bot, msg, emoji, user);
 
-	await bot.utils.handleTicketReactions(bot, msg, emoji, user);
+	bot.utils.handleTicketReactions(bot, msg, emoji, user);
 }

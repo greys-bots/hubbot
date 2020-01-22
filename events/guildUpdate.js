@@ -1,4 +1,4 @@
-module.exports = async (guild, bot) => {
+module.exports = async (guild, oldGuild, bot) => {
 	var posts = await bot.utils.getPostsByServer(bot, guild.id);
 	if(!posts) return;
 

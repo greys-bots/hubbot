@@ -298,7 +298,13 @@ module.exports = {
 	},
 	handleBanReactions: async (bot, msg, emoji, user) => {
 		return new Promise(async res => {
-			if(!["\u2753"].includes(emoji.name)) return;
+			try {
+				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
+			} catch(e) {
+				console.log(e);
+			}
+			
+			if(!["❓","❔"].includes(emoji.name)) return;
 			var log = await bot.utils.getBanLogByMessage(bot, msg.channel.guild.id, msg.channel.id, msg.id);
 			if(!log) return;
 
@@ -306,7 +312,7 @@ module.exports = {
 			if(!ch) return;
 
 			var receipt = await bot.utils.getReceipt(bot, log.hid, msg.channel.guild.id);
-			if(!receipt) return ch.channel.createMessage("No receipt has been registered for that ban :(");
+			if(!receipt) return ch.createMessage("No receipt has been registered for that ban :(");
 
 			var users = await bot.utils.verifyUsers(bot, log.embed.fields[1].value.split("\n"));
 
@@ -319,10 +325,11 @@ module.exports = {
 						{name: "Reason", value: log.embed.fields[2].value}
 					]
 				}})
-				bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
+				
 			} catch(e) {
 				console.log(e);
 			}
+			res(true);
 		});
 	}
 }
