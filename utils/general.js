@@ -143,5 +143,11 @@ module.exports = {
 				delete bot.menus[m.id];
 				break;
 		}
+	},
+	asyncForEach: async function(array, callback){
+		for (let index = 0; index < array.length; index++) {
+			console.log(array[index]);
+			await callback(array[index], index, array);
+		}
 	}
 }
