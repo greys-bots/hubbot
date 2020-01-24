@@ -35,7 +35,7 @@ bot.logVars = {
 	"$SERVER.NAME": '${guild.name || "(no name)"}'
 }
 
-const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+bot.AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
 const recursivelyReadDirectory = function(dir) {
 	var results = [];
