@@ -192,7 +192,7 @@ module.exports = {
 	},
 	findServers: async (bot, host, name) => {
 		return new Promise(res => {
-			bot.db.query(`SELECT * FROM servers WHERE host_id=? AND name LIKE ?`,[host, "%"+name+"%"], {
+			bot.db.query(`SELECT * FROM servers WHERE host_id=? AND (name LIKE ? OR server_id = ?)`,[host, "%"+name+"%", name], {
 				id: Number,
 				host_id: String,
 				server_id: String,
