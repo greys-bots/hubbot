@@ -14,7 +14,7 @@ module.exports = {
 	subcommands: {},
 	permissions: ["manageMessages"],
 	guildOnly: true,
-	alias: ["delete", "purge"],
+	alias: ["purge"],
 	module: "admin"
 }
 
@@ -33,7 +33,7 @@ module.exports.subcommands.safe = {
 	},
 	permissions: ["manageMessages"],
 	guildOnly: true,
-	alias: ["--s","s","s"]
+	alias: ["--s","-s","s"]
 }
 
 module.exports.subcommands.archive = {
