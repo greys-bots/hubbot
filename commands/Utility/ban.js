@@ -223,7 +223,7 @@ module.exports.subcommands.edit = {
 		users = users.info.map(u => u);
 
 		try {
-			var date = new Date(log.timestamp).toISOString();
+			var date = new Date(log.timestamp.replace(/"/g,"")).toISOString(); //just in case
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
 				title: "Members Banned",
 				fields: [
