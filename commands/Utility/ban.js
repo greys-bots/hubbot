@@ -223,7 +223,7 @@ module.exports.subcommands.edit = {
 		users = users.info.map(u => u);
 
 		try {
-			var date = new Date(log.timestamp.replace('"',"")).toISOString();
+			var date = new Date(log.timestamp).toISOString();
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
 				title: "Members Banned",
 				fields: [
@@ -237,7 +237,7 @@ module.exports.subcommands.edit = {
 				},
 				{
 					name: "**__Reason__**",
-					value: log.reason || "(no reason given)"
+					value: reason || "(no reason given)"
 				}
 				],
 				color: 9256253,
