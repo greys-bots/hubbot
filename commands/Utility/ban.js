@@ -243,7 +243,7 @@ module.exports.subcommands.edit = {
 				footer: {
 					text: log.hid
 				},
-				timestamp: log.timestamp
+				timestamp: new Date(log.timestamp).toISOString()
 			}})
 		} catch(e) {
 			console.log(e);
