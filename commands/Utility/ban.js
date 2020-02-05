@@ -98,7 +98,7 @@ module.exports = {
 		var message;
 		var channel;
 		var code = bot.utils.genCode(bot.chars);
-		var date = new Date();
+		var date = new Date().toISOString();
 		
 		if(!(succ.filter(m => m.pass).length > 0)) {
 			return await msg.channel.createMessage({content:'**No users were banned.**', embed: {
@@ -223,6 +223,7 @@ module.exports.subcommands.edit = {
 		users = users.info.map(u => u);
 
 		try {
+			var date = new Date(log.timestamp.replace('"',"")).toISOString();
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
 				title: "Members Banned",
 				fields: [
@@ -243,14 +244,14 @@ module.exports.subcommands.edit = {
 				footer: {
 					text: log.hid
 				},
-				timestamp: new Date(log.timestamp).toISOString()
+				timestamp: date
 			}})
 		} catch(e) {
 			console.log(e);
 			return msg.channel.createMessage("Something went wrong")
 		}
 		
-		var scc = await bot.utils.updateBanLog(bot, log.hid, msg.guild.id, {reason: reason})
+		var scc = await bot.utils.updateBanLog(bot, log.hid, msg.guild.id, {reason: reason, timestamp: date})
 		if(scc) msg.channel.createMessage("Log edited!");
 		else msg.channel.createMessage("Something went wrong");
 	},
