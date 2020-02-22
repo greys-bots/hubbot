@@ -47,7 +47,6 @@ module.exports = {
 				if(!mg || mg.length == 0) {
 					try {
 						await msg.guild.removeMemberRole(dat.pass[j], conf.reprole)
-						return new Promise(res => setTimeout(()=> res(1), 100))
 					} catch(e) {
 						console.log(e);
 					}
