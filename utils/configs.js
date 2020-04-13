@@ -27,11 +27,12 @@ module.exports = {
 			bot.db.query(`SELECT * FROM configs WHERE server_id=?`,[srv], (err, rows)=> {
 				if(err) {
 					console.log(err);
+					res(false);
 				} else {
 					if(!rows[0]) {
 						bot.db.query(`INSERT INTO configs 
 									 (server_id, banlog_channel, ban_message, reprole, delist_channel, starboard, blacklist, feedback) VALUES 
-									 (?,?,?,?,?,?,?,?,?,?,?)`,
+									 (?,?,?,?,?,?,?,?)`,
 									 [srv, data.banlog_channel || "", data.ban_message || "", data.reprole || "", data.delist_channel || "",
 									 data.starboard || {}, data.blacklist || [], data.feedback || {}])
 					} else {
