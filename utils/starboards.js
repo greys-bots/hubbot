@@ -161,8 +161,8 @@ module.exports = {
 			var reaction = msg.reactions[emoji.name.replace(/^:/,"")];
 			var board = await bot.utils.getStarboardByEmoji(bot, msg.guild.id, emoji.name);
 			if(!board) return res(true);
-			var cfg = await bot.utils.getConfig(bot, msg.guild.id);
-			var tolerance = board.tolerance ? board.tolerance : cfg.autopin || 2;
+			var cfg = (await bot.utils.getConfig(bot, msg.guild.id)) || {};
+			var tolerance = board.tolerance ? board.tolerance : cfg.starboard || 2;
 			var member = msg.guild.members.find(m => m.id == user);
 			if(!member) return res(true);
 

@@ -8,7 +8,7 @@ module.exports = {
 		        ban_message: String,
 		        reprole: String,
 		        delist_channel: String,
-		        starboard: JSON.parse,
+		        starboard: Number,
 		        blacklist: JSON.parse,
 		        feedback: JSON.parse
 			}, (err,rows)=>{
@@ -34,7 +34,7 @@ module.exports = {
 									 (server_id, banlog_channel, ban_message, reprole, delist_channel, starboard, blacklist, feedback) VALUES 
 									 (?,?,?,?,?,?,?,?)`,
 									 [srv, data.banlog_channel || "", data.ban_message || "", data.reprole || "", data.delist_channel || "",
-									 data.starboard || {}, data.blacklist || [], data.feedback || {}])
+									 data.starboard || null, data.blacklist || [], data.feedback || {}])
 					} else {
 						bot.db.query(`UPDATE configs SET ${Object.keys(data).map((k) => k+"=?").join(",")} WHERE server_id=?`,[...Object.values(data), srv], (err, rows)=> {
 							if(err) {
