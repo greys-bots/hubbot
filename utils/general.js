@@ -45,36 +45,38 @@ module.exports = {
 			res(embeds);
 		})
 	},
-	genReactPosts: async (bot, roles, msg, info = {}) => {
+	genReactPosts: async (bot, roles, info = {}) => {
 		return new Promise(async res => {
 			var embeds = [];
 			var current = { embed: {
 				title: info.title,
 				description: info.description,
-				fields: []
+				fields: [],
+				footer: info.footer
 			}, roles: [], emoji: []};
 			
 			for(let i=0; i<roles.length; i++) {
 				if(current.embed.fields.length < 10) {
-					var rl = msg.guild.roles.find(x => x.id == roles[i].role_id);
-					if(rl) {
-					 	current.embed.fields.push({name: `${rl.name} (${roles[i].emoji.includes(":") ? `<${roles[i].emoji}>` : roles[i].emoji})`, value: roles[i].description || "*(no description provided)*"});
-					 	current.roles.push({role_id: roles[i].role_id, emoji: roles[i].emoji});
-					 	current.emoji.push(roles[i].emoji);
-					}
+					current.embed.fields.push({
+						name: `${roles[i].raw.name} (${roles[i].emoji.includes(":") ? `<${roles[i].emoji}>` : roles[i].emoji})`,
+						value: `Description: ${roles[i].description || "*(no description provided)*"}\nPreview: ${roles[i].raw.mention}`
+					});
+					current.roles.push(roles[i].id);
+					current.emoji.push(roles[i].emoji);
 				} else {
 					embeds.push(current);
 					current = { embed: {
 						title: info.title,
 						description: info.description,
-						fields: []
-					}, roles: [], emoji: []};
-					var rl = msg.guild.roles.find(x => x.id == roles[i].role_id);
-					if(rl) {
-					 	current.embed.fields.push({name: `${rl.name} (${roles[i].emoji.includes(":") ? `<${roles[i].emoji}>` : roles[i].emoji})`, value: roles[i].description || "*(no description provided)*"});
-					 	current.roles.push({role_id: roles[i].role_id, emoji: roles[i].emoji});
-					 	current.emoji.push(roles[i].emoji);
-					}
+						fields: [],
+						footer: info.footer
+					}, emoji: []};
+					current.embed.fields.push({
+						name: `${roles[i].raw.name} (${roles[i].emoji.includes(":") ? `<${roles[i].emoji}>` : roles[i].emoji})`,
+						value: `Description: ${roles[i].description || "*(no description provided)*"}\nPreview: ${roles[i].raw.mention}`
+					});
+					current.roles.push(roles[i].id);
+					current.emoji.push(roles[i].emoji);
 				}
 			}
 			embeds.push(current);
@@ -118,7 +120,7 @@ module.exports = {
 	},
 	paginateEmbeds: async function(bot, m, emoji) {
 		switch(emoji.name) {
-			case "\u2b05":
+			case "⬅️":
 				if(this.index == 0) {
 					this.index = this.data.length-1;
 				} else {
@@ -128,7 +130,7 @@ module.exports = {
 				await bot.removeMessageReaction(m.channel.id, m.id, emoji.name, this.user)
 				bot.menus[m.id] = this;
 				break;
-			case "\u27a1":
+			case "➡️":
 				if(this.index == this.data.length-1) {
 					this.index = 0;
 				} else {
@@ -138,16 +140,32 @@ module.exports = {
 				await bot.removeMessageReaction(m.channel.id, m.id, emoji.name, this.user)
 				bot.menus[m.id] = this;
 				break;
-			case "\u23f9":
-				await bot.removeMessageReactions(m.channel.id, m.id);
+			case "⏹️":
+				await bot.deleteMessage(m.channel.id, m.id);
 				delete bot.menus[m.id];
 				break;
 		}
 	},
-	asyncForEach: async function(array, callback){
-		for (let index = 0; index < array.length; index++) {
-			console.log(array[index]);
-			await callback(array[index], index, array);
+	fetchUser: async (bot, id) => {
+		return new Promise(async (res, rej) => {
+			var user = bot.users.find(x => x.id == id);
+			if(!user) {
+				try{
+					user = await bot.getRESTUser(id);
+				} catch(e) {
+					console.log(e);
+					return rej(e.message);
+				}
+			}
+
+			res(user);
+		})
+	},
+	cleanText: function(text){
+		if (typeof(text) === "string") {
+			return text.replace(/`/g, "`" + String.fromCharCode(8203)).replace(/@/g, "@" + String.fromCharCode(8203));
+		} else	{
+			return text;
 		}
 	}
 }

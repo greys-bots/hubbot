@@ -5,60 +5,42 @@ module.exports = {
 				 " edit [banID] [new reason] - Edit the reason for a ban"],
 	execute: async (bot, msg, args)=>{
 		if(!args[0]) {
-			msg.addReaction(process.env.HOURGLASS || "⌛");
-			var logs = await bot.utils.getBanLogs(bot, msg.guild.id);
-			msg.removeReaction(process.env.HOURGLASS || "⌛");
-			if(!logs || !logs[0]) return msg.channel.createMessage("No bans registered for this server");
+			try {
+				var logs = await bot.stores.banLogs.getAll(msg.guild.id);
+			} catch(e) {
+				return "ERR: "+e
+			}
+			
+			if(!logs || !logs[0]) return "No bans registered for this server";
 			var embeds = logs.map((l,i) => {
 				l.embed.title += ` (log ${i+1}/${logs.length})`;
 				return {embed: l.embed}
 			});
 
-			var message = await msg.channel.createMessage(embeds[0]);
-			if(!bot.menus) bot.menus = {};
-			bot.menus[message.id] = {
-				user: msg.author.id,
-				index: 0,
-				data: embeds,
-				timeout: setTimeout(()=> {
-					if(!bot.menus[message.id]) return;
-					try {
-						message.removeReactions();
-					} catch(e) {
-						console.log(e);
-					}
-					delete bot.menus[message.id];
-				}, 900000),
-				execute: bot.utils.paginateEmbeds
-			};
-			
-			["\u2b05", "\u27a1", "\u23f9"].forEach(r => message.addReaction(r));
-			return;
+			return embeds;
 		}
 
 		//parsing for both space delimited and new line delimited stuff
-		//using this in an effort to retain the spacing used for the reason
-		//while also accounting for several kinds of delimiters
-		args = args.join(" ").split(/(,?\s)/);
-		var ind;
-		var membs;
-		var reason;
-		if(args.length > 1) {
-			ind = args.findIndex(a => !a.replace(/[<@!>]/g,"").match(/^(?:<@)?!?\d{17,}$>?/) && !a.match(/\s/));
-			if(ind > -1) {
-				membs = args.slice(0, ind).filter(x => !x.match(/\s/));
-				reason = args.slice(ind-1).join("");
-			} else {
-				membs = args.filter(x => !x.match(/\s/));
-				reason = "Banned through command";
-			}
-		} else {
-			membs = args.filter(x => !x.match(/\s/));
-			reason = "Banned through command";
+		var membs = [];
+		var reason = [];
+		for(var i = 0; i < args.length; i++) {
+			if(args[i].match(/^\d{17,}$/)) membs.push(args[i]);
+			else if(args[i].match(/^\d{17,}\n/)) {
+				var tmp = args[i].split("\n");
+				membs = membs.concat(tmp.slice(0, tmp.length-1))
+				reason.push(tmp[tmp.length-1]);
+			} else reason.push(args[i])
 		}
+		reason = reason.join(" ");
 
-		var conf = await bot.utils.getConfig(bot, msg.guild.id);
-		var b = await msg.guild.getBans()
+		try {
+			var conf = await bot.stores.configs.get(msg.guild.id);
+			var b = await msg.guild.getBans()
+		} catch(e) {
+			console.log(e);
+			return "ERR: "+ (e.message || e);
+		}
+		
 		if(!conf) conf = {};
 		else if(conf.ban_message) {
 			Object.keys(bot.banVars).forEach(bv => {
@@ -69,18 +51,18 @@ module.exports = {
 		for(var i = 0; i < membs.length; i++) {
 			var u;
 			try {
-				u = await bot.getRESTUser(membs[i].replace(/[<@!>]/g,""));
+				u = bot.users.find(us => us.id == membs[i]);
+				if(!u) u = await bot.getRESTUser(membs[i])
 			} catch(e) {
 				console.log(e);
-				succ.push({id: membs[i].replace(/[<@!>]/g,""), pass: false, reason: "User does not exist."});
-				continue;
+				succ.push({id: membs[i], pass: false, reason: "User does not exist"});
 			}
 
-			if(b && b.find(x => x.user.id == u.id)){
-				succ.push({id: u.id, pass: true, info: u});
+			if(b && b.find(x => x.user.id == membs[i])) {
+				succ.push({id:membs[i], pass:true, info:u});
 			} else {
-				if(msg.guild.members.find(mb => mb.id == u.id) && conf.banmsg) {
-					var ch = await bot.getDMChannel(u.id);
+				if(msg.guild.members.find(mb => mb.id == membs[i]) && conf.banmsg) {
+					var ch = await bot.getDMChannel(membs[i]);
 					if(ch) {
 						try {
 							ch.createMessage(conf.ban_message);
@@ -89,26 +71,25 @@ module.exports = {
 						}
 					}
 				}
-				bot.banGuildMember(msg.guild.id, u.id, 0, reason || "Banned through command.");
-				succ.push({id: u.id, pass: true, info: u})
+				bot.banGuildMember(msg.guild.id, membs[i], 0, reason || "Banned through command.");
+				succ.push({id: membs[i], pass: true, info: u})
 			}
 		}
 
-		var conf = await bot.utils.getConfig(bot, msg.guild.id);
 		var message;
 		var channel;
 		var code = bot.utils.genCode(bot.chars);
-		var date = new Date().toISOString();
-		
+		var date = new Date();
+
 		if(!(succ.filter(m => m.pass).length > 0)) {
-			return await msg.channel.createMessage({content:'**No users were banned.**', embed: {
+			return {content:'**No users were banned.**', embed: {
 				title: "Results",
 				fields: [
 				{
 					name: "Not Banned", value: (succ.filter(m => !m.pass).length > 0 ? succ.filter(x => !x.pass).map(m => m.id + " - " + m.reason).join("\n") : "None")
 				}
 				]
-			}});
+			}};
 		}
 
 		if(conf && conf.banlog_channel && msg.guild.channels.find(ch => ch.id == conf.banlog_channel))
@@ -149,14 +130,18 @@ module.exports = {
 			}});
 		}
 
-		var scc = await bot.utils.addBanLog(bot, code, msg.guild.id, message.channel.id, message.id, banned, reason, date);
-		if(scc) msg.channel.createMessage("Log added! ID: "+code);
-		else msg.channel.createMessage("The members have been banned, but the log was not successfully indexed.");
+		try {
+			await bot.stores.banLogs.create(msg.guild.id, code, {channel_id: message.channel.id, message_id: message.id, users: banned, reason, timestamp: date});
+			msg.channel.createMessage("Log added! ID: "+code);
+		} catch(e) {
+			console.log(e);
+			msg.channel.createMessage("The members have been banned, but the log was not successfully indexed.");
+		}
 
-		var scfg = await bot.utils.getSyncConfig(bot, msg.guild.id);
+		var scfg = await bot.stores.syncConfigs.get(msg.guild.id);
 		if(!scfg) return;
 		if(scfg.syncable && scfg.enabled) {
-			var synced = await bot.utils.getSyncedServers(bot, msg.guild.id);
+			var synced = await bot.stores.syncConfigs.getSynced(msg.guild.id);
 			if(!synced || !synced[0]) return;
 			for(var i = 0; i < synced.length; i++) {
 				if(!synced[i].ban_notifs) continue;
@@ -176,12 +161,12 @@ module.exports = {
 						}})
 					} catch(e) {
 						console.log(e);
-						//guess we'll die
+						return `ERR: ${e.message}\nServer: ${synced[i].guild.name} (${synced[i].guild.id})`;
 					}
 				}
 			}
 		} else if(scfg.sync_id && scfg.confirmed) {
-			scfg = await bot.utils.getSyncConfig(bot, scfg.sync_id);
+			scfg = await bot.stores.syncConfigs.get(scfg.sync_id);
 			if(!scfg.ban_notifs) return;
 			try {
 				await bot.createMessage(scfg.ban_notifs, {embed: {
@@ -198,8 +183,7 @@ module.exports = {
 				console.log(e);
 				//guess we'll die
 			}
-		}
-		
+		}	
 	},
 	permissions: ["manageMessages"],
 	subcommands: {},
@@ -211,49 +195,31 @@ module.exports.subcommands.edit = {
 	help: ()=> "Edit a ban message",
 	usage: ()=> [" [banID] [new message] - Edit the message on a ban"],
 	execute: async (bot, msg, args) => {
-		if(!args[1]) return msg.channel.createMessage("Please provide a ban ID and a reason");
-		var log = await bot.utils.getBanLog(bot, args[0].toLowerCase(), msg.guild.id);
+		if(!args[1]) return "Please provide a ban ID and a reason";
+		var log = await bot.stores.banLogs.get(args[0].toLowerCase(), msg.guild.id);
 		var reason = args.slice(1).join(" ");
 
-		if(!log) return msg.channel.createMessage("Log not found");
-		else if(log == "deleted") return msg.channel.createMessage("Log was deleted due to the message no longer existing");
-
-		var users = await bot.utils.verifyUsers(bot, log.users);
-		if(!users || !users.pass[0]) return msg.channel.createMessage("Something went wrong while parsing users");
-		users = users.info.map(u => u);
+		if(!log) return "Log not found";
+		else if(log == "deleted") return "Log was deleted due to the message no longer existing";
 
 		try {
-			var date = new Date(log.timestamp.replace(/"/g,"")).toISOString(); //just in case
 			bot.editMessage(log.channel_id, log.message_id, {embed: {
-				title: "Members Banned",
-				fields: [
-				{
-					name: "**__Last Known Usernames__**",
-					value: users.map(m => `${m.username}#${m.discriminator}`).join("\n") || "Something went wrong"
-				},
-				{
-					name: "**__User IDs__**",
-					value: users.map(m => m.id).join("\n") || "Something went wrong"
-				},
-				{
+				title: log.embed.title,
+				fields: [log.embed.fields[0], log.embed.fields[1], {
 					name: "**__Reason__**",
-					value: reason || "(no reason given)"
-				}
-				],
-				color: 9256253,
-				footer: {
-					text: log.hid
-				},
-				timestamp: date
+					value: reason
+				}],
+				color: log.embed.color,
+				timestamp: log.embed.timestamp,
+				footer: log.embed.footer
 			}})
+			await bot.stores.banLogs.update(msg.guild.id, log.hid, {reason: reason})
 		} catch(e) {
 			console.log(e);
-			return msg.channel.createMessage("Something went wrong")
+			return "ERR: "+(e.message || e);
 		}
 		
-		var scc = await bot.utils.updateBanLog(bot, log.hid, msg.guild.id, {reason: reason, timestamp: date})
-		if(scc) msg.channel.createMessage("Log edited!");
-		else msg.channel.createMessage("Something went wrong");
+		return "Log edited!";
 	},
 	guildOnly: true,
 	permissions: ["manageMessages"]
@@ -264,12 +230,18 @@ module.exports.subcommands.notification = {
 	usage: ()=> [" [channel] - Sets the ban notifs channel"],
 	desc: ()=> "The channel can be a #channel, ID, or channel-name",
 	execute: async (bot, msg, args) => {
+		var config = bot.stores.syncConigs.get(msg.guild.id);
 		var channel = msg.guild.channels.find(ch => (ch.name == args[0].toLowerCase() || ch.id == args[0].replace(/[<#>]/g,"")) && ch.type == 0);
-		if(!channel) return msg.channel.createMessage("Couldn't find that channel");
+		if(!channel) return "Couldn't find that channel";
 
-		var scc = await bot.utils.updateSyncConfig(bot, msg.guild.id, {ban_notifs: channel.id});
-		if(scc) msg.channel.createMessage("Channel set! Make sure you sync your server with another in order to get the full effect");
-		else msg.channel.createMessage("Something went wrong");
+		try {
+			if(config) await bot.stores.syncConfigs.update(msg.guild.id, {ban_notifs: channel.id});
+			else await bot.stores.syncConfigs.create(msg.guild.id, {ban_notifs: channel.id});
+		} catch(e) {
+			return "ERR: "+e;
+		}
+
+		return "Channel set! Make sure you sync your server with another in order to get the full effect";
 	},
 	alias: ["notif", "notifications", "notifs"],
 	guildOnly: true,

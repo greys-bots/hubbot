@@ -1,18 +1,19 @@
 const Eris 		= require("eris-additions")(require("eris"));
-const Discord 	= require("discord.js");
+const Discord   = require("discord.js");
 const dblite 	= require("dblite");
+const fs 		= require("fs");
+const path 		= require("path");	
 
 require('dotenv').config();
 
 const bot 	= new Eris(process.env.TOKEN, {restMode: true});
 
-bot.fetch 	= require('node-fetch');
-bot.fs 		= require('fs');
-bot.db = dblite('data.sqlite',"-header");
+bot.chars 		= process.env.CHARS;
+bot.prefix 		= process.env.PREFIX;
+bot.owner 		= process.env.OWNER;
 
-bot.chars = process.env.CHARS;
-bot.prefix = process.env.PREFIX;
-bot.log_channel = process.env.LOG_CHANNEL;
+bot.fetch 		= require('node-fetch');
+bot.tc 			= require('tinycolor2');
 
 bot.customActions = [
 	{name: "member.hr", replace: "msg.member.hasRole"},
@@ -39,7 +40,7 @@ bot.AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
 const recursivelyReadDirectory = function(dir) {
 	var results = [];
-	var files = bot.fs.readdirSync(dir, {withFileTypes: true});
+	var files = fs.readdirSync(dir, {withFileTypes: true});
 	for(file of files) {
 		if(file.isDirectory()) {
 			results = results.concat(recursivelyReadDirectory(dir+"/"+file.name));
@@ -81,192 +82,20 @@ const registerCommand = function({command, module, name} = {}) {
 }
 
 async function setup() {
-	//database schema
-	//FINALLY alphabetized
+	var files;
+	bot.db = await require('./stores/__db.js')(bot);
 
-	bot.db.query(`CREATE TABLE IF NOT EXISTS ban_logs (
-		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		hid 		TEXT,
-		server_id 	TEXT,
-		channel_id 	TEXT,
-		message_id 	TEXT,
-		users 		TEXT,
-		reason 		TEXT,
-		timestamp 	TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS commands (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id 	BIGINT,
-		name 		TEXT,
-		actions 	TEXT,
-		target 		TEXT,
-		del 		INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS configs (
-    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-        server_id   	BIGINT,
-        banlog_channel	BIGINT,
-        ban_message 	TEXT,
-        reprole 		BIGINT,
-        delist_channel	BIGINT,
-        starboard 		TEXT,
-        blacklist 		TEXT,
-        feedback 		TEXT
-    )`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS feedback (
-		id			INTEGER PRIMARY KEY AUTOINCREMENT,
-		hid			TEXT,
-		server_id	TEXT,
-		sender_id 	TEXT,
-		message 	TEXT,
-		anon 		INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS listing_logs (
-		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-		hid 			TEXT,
-		server_id 		TEXT,
-		channel_id 		TEXT,
-		message_id 		TEXT,
-		server_name 	TEXT,
-		reason 			TEXT,
-		timestamp 		TEXT,
-		type 			INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS posts (
-        id          INTEGER PRIMARY KEY AUTOINCREMENT,
-        host_id 	BIGINT,
-        server_id   BIGINT,
-        channel_id  BIGINT,
-        message_id  BIGINT
-    )`);
-
-    bot.db.query(`CREATE TABLE IF NOT EXISTS reactcategories (
-    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-    	hid 			TEXT,
-    	server_id		BIGINT,
-    	name 			TEXT,
-    	description 	TEXT,
-    	roles 			TEXT,
-    	posts 			TEXT
-    )`);
-
-    bot.db.query(`CREATE TABLE IF NOT EXISTS reactroles (
-    	id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-    	server_id		BIGINT,
-    	role_id 		BIGINT,
-    	emoji 			TEXT,
-    	description 	TEXT
-    )`);
-
-    bot.db.query(`CREATE TABLE IF NOT EXISTS reactposts (
-		id			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id	TEXT,
-		channel_id	TEXT,
-		message_id	TEXT,
-		roles		TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS receipts (
-		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		hid 		TEXT,
-		server_id 	TEXT,
-		message		TEXT,
-		link		TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS servers(
-		id         	INTEGER PRIMARY KEY AUTOINCREMENT,
-		host_id 	BIGINT,
-        server_id   BIGINT,
-        contact_id  TEXT,
-        name        TEXT,
-        description TEXT,
-        invite		TEXT,
-        pic_url     TEXT,
-        visibility  INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS starboards (
-		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id 	TEXT,
-		channel_id	TEXT,
-		emoji		TEXT,
-		override	INTEGER,
-		tolerance	INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS starred_messages (
-		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id	TEXT,
-		channel_id	TEXT,
-		message_id 	TEXT,
-		original_id TEXT,
-		emoji 		TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS sync (
-		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id 		TEXT,
-		sync_id 		TEXT,
-		confirmed 		INTEGER,
-		syncable 		INTEGER,
-		sync_notifs 	TEXT,
-		ban_notifs 		TEXT,
-		enabled 		INTEGER
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS sync_menus (
-		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id 		TEXT,
-		channel_id 		TEXT,
-		message_id 		TEXT,
-		type 			INTEGER,
-		reply_guild 	TEXT,
-		reply_channel 	TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS ticket_configs (
-		id 			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id	TEXT,
-		category_id	TEXT,
-		archives_id TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS ticket_posts (
-		id			INTEGER PRIMARY KEY AUTOINCREMENT,
-		server_id	TEXT,
-		channel_id	TEXT,
-		message_id	TEXT
-	)`);
-
-	bot.db.query(`CREATE TABLE IF NOT EXISTS tickets (
-		id 				INTEGER PRIMARY KEY AUTOINCREMENT,
-		hid 			TEXT,
-		server_id 		TEXT,
-		channel_id		TEXT,
-		first_message 	TEXT,
-		opener 			TEXT,
-		users 			TEXT,
-		timestamp 		TEXT
-	)`);
-
-	files = bot.fs.readdirSync("./events");
-	files.forEach(f => {
-		bot.on(f.slice(0,-3), (...args) => require("./events/"+f)(...args,bot));
-	});
+	files = fs.readdirSync("./events");
+	files.forEach(f => bot.on(f.slice(0,-3), (...args) => require("./events/"+f)(...args,bot)));
 
 	bot.utils = {};
-	files = bot.fs.readdirSync("./utils");
+	files = fs.readdirSync("./utils");
 	files.forEach(f => Object.assign(bot.utils, require("./utils/"+f)));
 
 	files = recursivelyReadDirectory("./commands");
 
 	bot.modules = new Discord.Collection();
+	bot.mod_aliases = new Discord.Collection();
 	bot.commands = new Discord.Collection();
 	bot.aliases = new Discord.Collection();
 	for(f of files) {
@@ -276,6 +105,8 @@ async function setup() {
 		if(!bot.modules.get(mod.toLowerCase())) {
 			var mod_info = require(file == "__mod.js" ? f : f.replace(file, "__mod.js"));
 			bot.modules.set(mod.toLowerCase(), {...mod_info, name: mod, commands: new Discord.Collection()})
+			bot.mod_aliases.set(mod.toLowerCase(), mod.toLowerCase());
+			if(mod_info.alias) mod_info.alias.forEach(a => bot.mod_aliases.set(a, mod.toLowerCase()));
 		}
 		if(file == "__mod.js") continue;
 
@@ -301,20 +132,25 @@ bot.asyncForEach = async (arr, bot, msg, args, cb) => {
 	  }
 }
 
-bot.parseCommand = async function(bot, msg, args) {
+bot.parseCommand = async function(bot, msg, args, command) {
 	if(!args[0]) return undefined;
 	
 	var command = bot.commands.get(bot.aliases.get(args[0].toLowerCase()));
-	if(!command) return {command, nargs: args};
+	if(!command) return {command, args};
 
 	args.shift();
+	var permcheck = true;
 
 	if(args[0] && command.subcommands && command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()))) {
 		command = command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()));
 		args.shift();
 	}
 
-	return {command, nargs: args};
+	//will erroneously give true in dms even though perms don't exist
+	//guildOnly check is done first in actual command execution though,
+	//so that doesn't matter
+	if(command.permissions && msg.guild) permcheck = command.permissions.filter(x => msg.member.permission.has(x)).length == command.permissions.length;
+	return {command, args, permcheck};
 }
 
 bot.parseCustomCommand = async function(bot, msg, args) {
@@ -494,3 +330,8 @@ bot.on("ready",()=>{
 
 setup();
 bot.connect();
+
+process.on('unhandledRejection', error => {
+  //figure out better error handling
+  console.log(error);
+});

@@ -1,20 +1,17 @@
 module.exports = {
-	help: ()=> "A little about the bot",
-	usage: ()=> [" - Just what's on the tin"],
+	help: ()=> "A bit about the bot",
+	usage: ()=> [" - What it says on the tin"],
 	execute: async (bot, msg, args) => {
-		msg.channel.createMessage({embed: {
-			title: '**About**',
-			fields:[
-				{name: "Prefix", value: "`hub!command`"},
-				{name: "Creator", value: "xSke [original python version] | greysdawn (GreySkies#9950/(gs)#6969) [current maintainers]"},
-				{name: "Repo", value: "https://github.com/greys-bots/hubbot"},
-				{name: "Creator's Patreon", value: "https://patreon.com/greysdawn"},
-				{name: "Creator's Ko-Fi", value: "https://ko-fi.com/greysdawn"},
-				{name: "Guilds", value: bot.guilds.size},
-				{name: "Users", value: bot.users.size}
+		return {embed: {
+			title: "About the bot",
+			description: "Hi! I'm Hubbot! :D\nI'm the heavy lifter bot for Plural Hub"+
+						 "\nHere's some more about me:",
+			fields: [
+				{name: "Creators", value: "[greysdawn](https://github.com/greysdawn) | (GS)#6969 (original by [xSke](https://github.com/xSke))"},
+				{name: "Stats", value: `Guilds: ${bot.guilds.size} | Users: ${bot.users.size}`}
 			]
-		}})
+
+		}};
 	},
-	alias: ['abt', 'a'],
-	module: "utility"
+	alias: ["a", "abt"]
 }

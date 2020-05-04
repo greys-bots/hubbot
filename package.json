@@ -10,7 +10,9 @@
     "eris": "github:abalabahaha/eris#dev",
     "eris-additions": "^1.2.5",
     "mysql": "^2.17.1",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "node-ipc": "^9.1.1",
+    "pg": "^8.0.3"
   },
   "devDependencies": {},
   "scripts": {
