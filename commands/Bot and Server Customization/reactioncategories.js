@@ -13,8 +13,8 @@ module.exports = {
 		var embeds = [];
 		if(args[0]) {
 			var category = await bot.stores.reactCategories.get(msg.guild.id, args[0].toLowerCase());
-			if(!category) return msg.channel.createMessage("Category not found");
-			if(!category.roles || !category.roles[0]) return msg.channel.createMessage("That category has no roles indexed");
+			if(!category) return "Category not found";
+			if(!category.roles || !category.roles[0]) return "That category has no roles indexed";
 
 			embeds = await bot.utils.genEmbeds(bot, category.roles, rl => {
 				return {name: `${rl.raw.name} (${rl.emoji.includes(":") ? `<${rl.emoji}>` : rl.emoji})`, value: `Description: ${rl.description || "*(no description provided)*"}\nPreview: ${rl.raw.mention}`}
