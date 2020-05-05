@@ -158,7 +158,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 		if(!args || !args[0]) return res(undefined);
 		if(!msg.guild) return res(undefined);
 		var name = args.shift().toLowerCase();
-		var cmd = await bot.utils.getCustomCommand(bot, msg.guild.id, name);
+		var cmd = await bot.stores.customCommands.get(msg.guild.id, name);
 		if(!cmd) return res(undefined);
 
 		cmd.newActions = [];
@@ -298,7 +298,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 		cmd.execute = async (bot, msg, args, cmd) => {
 			console.log("executing...");
 			let msgs = [];
-			await bot.utils.asyncForEach(cmd.newActions, async (a) => {
+			await bot.asyncForEach(cmd.newActions, async (a) => {
 				try {
 					await a[0].call(null, bot, msg, args);
 				} catch (e) {
