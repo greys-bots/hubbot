@@ -5,7 +5,7 @@ var fs 		= require('fs');
 var Eris 	= require("eris-additions")(require("eris"));
 var bot 	= new Eris(process.env.TOKEN, {restmode: true});
 
-const old_db = dblite('tmp.sqlite', '-header');
+const old_db = dblite('data.sqlite', '-header');
 
 async function migrate() {
 	return new Promise(async (res, rej)=> {
@@ -232,7 +232,26 @@ async function migrate() {
 			}
 		});
 
-		old_db.query(`SELECT * FROM starboard`, {
+		old_db.query(`SELECT * FROM starboards`, {
+			id: Number,
+			server_id: String,
+			channel_id: String,
+			emoji: String,
+			override: Boolean,
+			tolerance: Number
+		}, async (err, rows) => {
+			if(err) {
+				console.log(err);
+				rej(err.message);
+			} else if(rows[0]) {
+				for(var row of rows) {
+					console.log(row)
+					await bot.stores.starboards.index(row.server_id, row.channel_id, row.emoji, row);
+				}
+			}
+		});
+
+		old_db.query(`SELECT * FROM starred_messages`, {
 			id: Number,
 			server_id: String,
 			channel_id: String,
@@ -248,7 +267,7 @@ async function migrate() {
 					await bot.stores.starPosts.index(row.server_id, row.channel_id, row.message_id, row);
 				}
 			}
-		})
+		});
 
 		old_db.query(`SELECT * FROM sync`, {
 			id: Number,
