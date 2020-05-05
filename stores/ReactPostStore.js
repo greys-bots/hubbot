@@ -145,7 +145,7 @@ class ReactPostStore extends Collection {
 				}
 
 				data.rows[0].raw_roles = data.rows[0].roles;
-				data.rows[0].roles = posts;
+				data.rows[0].roles = roles;
 				data.rows[0].message = msg;
 				res(data.rows[0])
 			} else res(undefined);
