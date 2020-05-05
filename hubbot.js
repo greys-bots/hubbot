@@ -132,6 +132,27 @@ bot.asyncForEach = async (arr, bot, msg, args, cb) => {
 	  }
 }
 
+bot.parseCommand = async function(bot, msg, args, command) {
+	if(!args[0]) return undefined;
+	
+	var command = bot.commands.get(bot.aliases.get(args[0].toLowerCase()));
+	if(!command) return {command, args};
+
+	args.shift();
+	var permcheck = true;
+
+	if(args[0] && command.subcommands && command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()))) {
+		command = command.subcommands.get(command.sub_aliases.get(args[0].toLowerCase()));
+		args.shift();
+	}
+
+	//will erroneously give true in dms even though perms don't exist
+	//guildOnly check is done first in actual command execution though,
+	//so that doesn't matter
+	if(command.permissions && msg.guild) permcheck = command.permissions.filter(x => msg.member.permission.has(x)).length == command.permissions.length;
+	return {command, args, permcheck};
+}
+
 bot.parseCustomCommand = async function(bot, msg, args) {
 	return new Promise(async res => {
 		if(!args || !args[0]) return res(undefined);
@@ -302,177 +323,6 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 		cmd.name = name;
 
 		res({command: cmd, args})
-	})
-}
-
-bot.parseCustomCommand = async function(bot, msg, args) {
-	return new Promise(async res => {
-		if(!args || !args[0]) return res(undefined);
-		if(!msg.guild) return res(undefined);
-		var name = args.shift().toLowerCase();
-		var cmd = await bot.stores.customCommands.get(msg.guild.id, name);
-		if(!cmd) return res(undefined);
-
-		cmd.newActions = [];
-
-		cmd.actions.forEach(action => {
-			if(cmd.target == "member") {
-				switch(action.type) {
-					case "if":
-						var condition = action.condition;
-						var ac = action.action;
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							condition = condition.replace(n, ca.replace)
-							ac = ac.replace(n, ca.replace);
-						})
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`if(${condition}) ${ac};`
-						), action.success, action.fail]);
-						break;
-					case "if:else":
-						var condition = action.condition;
-						var tr = action.action[0];
-						var fls = action.action[1];
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							condition = condition.replace(n, ca.replace)
-							tr = tr.replace(n, ca.replace);
-							fls = fls.replace(n, ca.replace);
-						})
-
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`if(${condition}) ${tr};
-							 else ${fls}`
-						), action.success, action.fail]);
-						break;
-					case "rr":
-						var ac = action.action;
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							ac = ac.replace(n, ca.replace);
-						})
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`${ac}`
-						), action.success, action.fail]);
-						break;
-					case "ar":
-						var ac = action.action;
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							ac = ac.replace(n, ca.replace);
-						})
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`${ac}`
-						), action.success, action.fail]);
-						break;
-					case "bl":
-						var ac = action.action;
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							ac = ac.replace(n, ca.replace);
-						})
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`${ac}`
-						), action.success, action.fail]);
-						break;
-				}
-			} else {
-				switch(action.type) {
-					case "if":
-						var condition = action.condition;
-						var ac = action.action;
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							condition = condition.replace(n, ca.replace)
-							ac = ac.replace(n, ca.replace);
-						})
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`if(${condition}) ${ac};`
-						), action.success, action.fail]);
-						break;
-					case "if:else":
-						var condition = action.condition;
-						var tr = action.action[0];
-						var fls = action.action[1];
-						bot.customActions.forEach(ca => {
-							var n = ca.regex ? new RegExp(ca.name) : ca.name;
-							condition = condition.replace(n, ca.replace)
-							tr = tr.replace(n, ca.replace);
-							fls = fls.replace(n, ca.replace);
-						})
-
-						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-							`if(${condition}) ${tr};
-							 else ${fls}`
-						), action.success, action.fail]);
-						break;
-					case "rr":
-						args.forEach(arg => {
-							var ac = action.action;
-							bot.customActions.forEach(ca => {
-								var n = ca.regex ? new RegExp(ca.name) : ca.name;
-								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
-							})
-							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-								`${ac}`
-							), action.success, action.fail]);
-						})
-						break;
-					case "ar":
-						args.forEach(arg => {
-							var ac = action.action;
-							bot.customActions.forEach(ca => {
-								var n = ca.regex ? new RegExp(ca.name) : ca.name;
-								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
-							})
-							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-								`${ac}`
-							), action.success, action.fail]);
-						})
-						break;
-					case "bl":
-						args.forEach(arg => {
-							var ac = action.action;
-							bot.customActions.forEach(ca => {
-								var n = ca.regex ? new RegExp(ca.name) : ca.name;
-								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
-							})
-							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
-								`${ac}`
-							), action.success, action.fail]);
-						})
-						break;
-				}
-			}			
-		})
-
-		cmd.execute = async (bot, msg, args, cmd) => {
-			console.log("executing...");
-			let msgs = [];
-			await bot.asyncForEach(cmd.newActions, async (a) => {
-				try {
-					await a[0].call(null, bot, msg, args);
-				} catch (e) {
-					if(e) console.log(e);
-					if(a[2]) return await msg.channel.createMessage(a[2] +`\n${e.message}`).then(message => {msgs.push(message)})
-				}
-				if(a[1]) await msg.channel.createMessage(a[1]).then(message => {
-					msgs.push(message);
-				})
-			})
-			if(cmd.del) {
-				setTimeout(async ()=> {
-					await msg.delete();
-					await Promise.all(msgs.map(async m => {
-						await m.delete()
-						return new Promise(res => res(""))
-					}))
-				}, 2000)
-			}
-		}
-
-		res({command: cmd, nargs: args, name})
 	})
 }
 
