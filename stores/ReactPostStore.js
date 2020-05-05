@@ -334,15 +334,16 @@ class ReactPostStore extends Collection {
 			if(emoji.id) emoji.name = `:${emoji.name}:${emoji.id}`;
 			var role = post.roles.find(r => [emoji.name, `a${emoji.name}`].includes(r.emoji));
 			if(!role) return;
+			// var roles = post.roles.map(r => msg.channel.guild.roles.find(x => x.id == r.role_id)).filter(x => x);
 			role = msg.channel.guild.roles.find(r => r.id == role.role_id);
 			if(!role) return;
 			var member = msg.channel.guild.members.find(m => m.id == user);
 			if(!member) return;
 
 			try {
+				this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name.replace(/^:/,""), user);
 				if(member.roles.includes(role.id)) msg.channel.guild.removeMemberRole(user, role.id);
 				else msg.channel.guild.addMemberRole(user, role.id);
-				this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name.replace(/^:/,""), user);
 			} catch(e) {
 				console.log(e);
 				var ch = await this.bot.getDMChannel(user);

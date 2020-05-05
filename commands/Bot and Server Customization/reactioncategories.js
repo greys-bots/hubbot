@@ -274,3 +274,39 @@ module.exports.subcommands.post = {
 	permissions: ["manageRoles"],
 	guildOnly: true
 }
+
+// module.exports.subcommands.unique = {
+// 	help: ()=> "Sets whether a category's roles are unique or not",
+// 	usage: ()=> [" [id] - Tells you the current value for the given category",
+// 				 " [id] (1 | true) - Sets the category's roles to be unique",
+// 				 " [id] (0 | false) - Sets the category's roles to not be unique"],
+// 	desc: ()=> ["`Unique` means that users can only receive one role from this category at a time. ",
+// 				"If they try to receive multiple, it'll automatically remove extra ones"],
+// 	execute: async (bot, msg, args) => {
+// 		if(!args[0]) return "Please provide at least a category ID";
+// 		var category = await bot.stores.reactCategories.get(msg.guild.id, args[0].toLowerCase());
+// 		if(!category) return "Category not found";
+
+// 		if(!args[1]) return `Current value: ${category.unique}`;
+
+// 		try {
+// 			switch(args[1].toLowerCase()) {
+// 				case "1":
+// 				case "true":
+// 					await bot.stores.reactCategories.update(msg.guild.id, category.hid, {unique: true});
+// 					break;
+// 				case "0":
+// 				case "false":
+// 					await bot.stores.reactCategories.update(msg.guild.id, category.hid, {unique: false});
+// 					break;
+// 			}
+// 		} catch(e) {
+// 			return "ERR: "+e;
+// 		}
+
+// 		return "Uniqueness set!";
+// 	},
+// 	alias: ['u', 'single'],
+// 	permissions: ['manageRoles'],
+// 	guildOnly: true
+// }
