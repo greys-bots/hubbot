@@ -26,31 +26,31 @@ class ServerPostStore extends Collection {
 
 		this.bot.on("guildCreate", async (guild) => {
 			return new Promise(async (res, rej) => {
-				var guild = await this.bot.stores.servers.getByID(guild.id);
-				await this.updateByServer(guild.id, guild);
+				guild = await this.bot.stores.servers.getByID(guild.id);
+				await this.updateByServer(guild.server_id, guild);
 			})	
 		})
 
 		this.bot.on("guildUpdate", async (guild) => {
 			return new Promise(async (res, rej) => {
-				var guild = await this.bot.stores.servers.updateByID(guild.id, {name: guild.name, pic_url: guild.iconURL})
-				await this.updateByServer(guild.id, guild);
+				guild = await this.bot.stores.servers.updateByID(guild.id, {name: guild.name, pic_url: guild.iconURL})
+				await this.updateByServer(guild.server_id, guild);
 			})
 		})
 
 		this.bot.on("guildMemberAdd", async (guild, member) => {
 			return new Promise(async (res, rej) => {
 				//update member count
-				var guild = await this.bot.stores.servers.getByID(guild.id);
-				await this.updateByServer(guild.id, guild);
+				guild = await this.bot.stores.servers.getByID(guild.id);
+				await this.updateByServer(guild.server_id, guild);
 			})
 		})
 
 		this.bot.on("guildMemberRemove", async (guild, member) => {
 			return new Promise(async (res, rej) => {
 				//update member count
-				var guild = await this.bot.stores.servers.getByID(guild.id);
-				await this.updateByServer(guild.id, guild);
+				guild = await this.bot.stores.servers.getByID(guild.id);
+				await this.updateByServer(guild.server_id, guild);
 			});
 		})
 
