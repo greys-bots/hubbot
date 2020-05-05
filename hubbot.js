@@ -174,7 +174,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							condition = condition.replace(n, ca.replace)
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${ac};`
 						), action.success, action.fail]);
 						break;
@@ -189,7 +189,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							fls = fls.replace(n, ca.replace);
 						})
 
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${tr};
 							 else ${fls}`
 						), action.success, action.fail]);
@@ -200,7 +200,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
@@ -210,7 +210,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
@@ -220,7 +220,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							var n = ca.regex ? new RegExp(ca.name) : ca.name;
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`${ac}`
 						), action.success, action.fail]);
 						break;
@@ -235,7 +235,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							condition = condition.replace(n, ca.replace)
 							ac = ac.replace(n, ca.replace);
 						})
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${ac};`
 						), action.success, action.fail]);
 						break;
@@ -250,7 +250,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 							fls = fls.replace(n, ca.replace);
 						})
 
-						cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+						cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 							`if(${condition}) ${tr};
 							 else ${fls}`
 						), action.success, action.fail]);
@@ -262,7 +262,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
@@ -274,7 +274,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
@@ -286,7 +286,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 								var n = ca.regex ? new RegExp(ca.name) : ca.name;
 								ac = ac.replace(n, typeof ca.replace == "function" ? ca.replace(arg) : ca.replace);
 							})
-							cmd.newActions.push([new AsyncFunction("bot", "msg", "args",
+							cmd.newActions.push([new bot.AsyncFunction("bot", "msg", "args",
 								`${ac}`
 							), action.success, action.fail]);
 						})
