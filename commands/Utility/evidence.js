@@ -84,8 +84,8 @@ module.exports.subcommands.edit = {
 		if(!log || log == "deleted") return "Log does not exist";
 		if(!log.receipt) return "No receipts registered for that ban; use `hub!receipt add` to add one";
 
-		if(receipt.link) {
-			var links = await bot.stores.receipts.getLinked(msg.guild.id, receipt.link);
+		if(log.receipt.link) {
+			var links = await bot.stores.receipts.getLinked(msg.guild.id, log.receipt.link);
 			try {
 				for(var r of links) {
 					await bot.stores.receipts.update(msg.guild.id, r.hid, {message: args.slice(1).join(" ")});
@@ -97,7 +97,7 @@ module.exports.subcommands.edit = {
 			return "Receipt edited, along with all linked receipts!";
 		} else {
 			try {
-				await bot.stores.receipts.update(receipt.hid, msg.guild.id, {message: args.slice(1).join(" ")});
+				await bot.stores.receipts.update(log.receipt.hid, msg.guild.id, {message: args.slice(1).join(" ")});
 			} catch(e) {
 				return "ERR: "+e;
 			}
