@@ -17,7 +17,7 @@ class SyncConfigStore extends Collection {
 				var log = await this.bot.stores.banLogs.getByUser(scfg.sync_id, member.id);
 				if(!log || log == "deleted") return;
 				try {
-					await bot.createMessage(scfg.ban_notifs, {embed: {
+					await this.bot.createMessage(scfg.ban_notifs, {embed: {
 						title: "Ban Notification",
 						description: [
 							`New member **${member.username}#${member.discriminator}** (${member.id})`,
