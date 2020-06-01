@@ -77,7 +77,7 @@ class ListingLogStore extends Collection {
 		return new Promise(async (res, rej) => {
 			if(!forceUpdate) {
 				var log = super.get(`${server}-${hid}`);
-				if(log) return res(config);
+				if(log) return res(log);
 			}
 
 			try {
