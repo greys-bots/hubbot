@@ -391,7 +391,7 @@ class ServerPostStore extends Collection {
 			await this.bot.removeMessageReaction(message.channel.id, message.id, emoji.name, user);
 
 			var channel = await this.bot.getDMChannel(user);
-			if(!post.server.contact_id || !post.server.contact_id.includes(user)) {
+			if(!post.server.contact_id?.includes(user) && !message.guild.members.find(m => m.id == member.id).permission.has('manageMessages')) {
 				try {
 					await channel.createMessage("You aren't a contact for that server, and thus cannot edit it");
 				} catch(e) {
