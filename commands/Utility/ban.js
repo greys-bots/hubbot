@@ -230,7 +230,7 @@ module.exports.subcommands.notification = {
 	usage: ()=> [" [channel] - Sets the ban notifs channel"],
 	desc: ()=> "The channel can be a #channel, ID, or channel-name",
 	execute: async (bot, msg, args) => {
-		var config = bot.stores.syncConigs.get(msg.guild.id);
+		var config = bot.stores.syncConfigs.get(msg.guild.id);
 		var channel = msg.guild.channels.find(ch => (ch.name == args[0].toLowerCase() || ch.id == args[0].replace(/[<#>]/g,"")) && ch.type == 0);
 		if(!channel) return "Couldn't find that channel";
 
