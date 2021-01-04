@@ -14,14 +14,12 @@ module.exports = {
 				var dat = await bot.utils.verifyUsers(bot, servers[i].contact_id);
 				contacts = dat.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
 			}
-			
-			embeds.push({embed: {
+			var embed = {embed: {
 				title: (servers[i].name || "(unnamed)") + ` (server ${i+1}/${servers.length})`,
 				description: servers[i].description || "(no description provided)",
 				fields: [
 					{name: "Contact", value: contacts},
-					{name: "Link", value: servers[i].invite ? servers[i].invite : "(no link provided)"},
-					{name: "Members", value: servers[i].guild ? servers[i].guild.memberCount : "(unavailable)"}
+					{name: "Link", value: servers[i].invite ? servers[i].invite : "(no link provided)"}
 				],
 				thumbnail: {
 					url: servers[i].pic_url || ""
@@ -30,7 +28,11 @@ module.exports = {
 				footer: {
 					text: `ID: ${servers[i].server_id} | This server ${servers[i].visibility ? "is" : "is not"} visible on the website`
 				}
-			}})
+			}}
+			if(servers[i].guild) embed.embed.fields.push({name: 'Members', value: servers[i].guild.memberCount});
+			if(servers[i].activity) embed.embed.fields.push({name: 'Activity Rating', value: servers[i].activity});
+			
+			embeds.push(embed)
 		}
 		msg.removeReaction(process.env.HOURGLASS || "⌛")
 
