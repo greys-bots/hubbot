@@ -8,6 +8,23 @@ module.exports = {
 
 		var dat = guild.contact_id == undefined || guild.contact_id == "" ? "" : await bot.utils.verifyUsers(bot, guild.contact_id);
 		var contacts = dat.info ? dat.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n") : "(no contact provided)";
+		var embed = {
+			title: guild.name || "(unnamed)",
+			description: guild.description || "(no description provided)",
+			fields: [
+				{name: "Contact", value: contacts},
+				{name: "Link", value: guild.invite || "(no link provided)"}
+			],
+			thumbnail: {
+				url: guild.pic_url || ""
+			},
+			color: 3447003,
+			footer: {
+				text: `ID: ${guild.server_id} | This server ${guild.visibility ? "is" : "is not"} visible on the website`
+			}
+		}
+		if(guild.guild) embed.fields.push({name: "Members", value: guild.guild.memberCount, inline: true});
+		if(guild.activity) embed.fields.push({name: "Activity Rating", value: guild.activity, inline: true});
 
 		var failed = [];
 
@@ -20,22 +37,7 @@ module.exports = {
 			}
 
 			try {
-				var message = await chan.createMessage({embed: {
-					title: guild.name || "(unnamed)",
-					description: guild.description || "(no description provided)",
-					fields: [
-						{name: "Contact", value: contacts},
-						{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"},
-						{name: "Members", value: guild.guild ? guild.guild.memberCount : "(unavailable)"}
-					],
-					thumbnail: {
-						url: guild.pic_url || ""
-					},
-					color: 3447003,
-					footer: {
-						text: `ID: ${guild.server_id} | This server ${guild.visibility ? "is" : "is not"} visible on the website`
-					}
-				}});
+				var message = await chan.createMessage({embed});
 				await bot.stores.serverPosts.create(msg.guild.id, guild.server_id, chan.id, message.id);
 			} catch(e) {
 				console.log(e);

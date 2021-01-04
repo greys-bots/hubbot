@@ -12,13 +12,13 @@ module.exports = {
 			var dat = await bot.utils.verifyUsers(bot, guild.contact_id);
 			contacts = dat.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
 		}
-		return {embed: {
+
+		var embed = {
 			title: guild.name || "(unnamed)",
 			description: guild.description || "(no description provided)",
 			fields: [
 				{name: "Contact", value: contacts || "(no contact registered)"},
-				{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"},
-				{name: "Members", value: guild.guild ? guild.guild.memberCount : "(unavailable)"}
+				{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"}
 			],
 			thumbnail: {
 				url: guild.pic_url
@@ -27,7 +27,11 @@ module.exports = {
 			footer: {
 				text: `ID: ${guild.server_id} | This server ${guild.visibility ? "is" : "is not"} visible on the website`
 			}
-		}};
+		}
+		if(guild.guild) embed.fields.push({name: "Members", value: guild.guild.memberCount, inline: true});
+		if(guild.activity) embed.fields.push({name: "Activity Rating", value: guild.activity, inline: true});
+
+		return {embed};
 	},
 	permissions: ["manageMessages"],
 	guildOnly: true

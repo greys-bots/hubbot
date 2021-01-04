@@ -262,6 +262,7 @@ class ServerPostStore extends Collection {
 				color: data.color ? parseInt(data.color, 16) : post.message.embeds[0].color,
 				contact_id: data.contact_id,
 				visibility: data.visibility,
+				activity: data.activity,
 				footer: {text: `ID: ${data.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`}
 			};
 
@@ -271,23 +272,26 @@ class ServerPostStore extends Collection {
 				data.contacts = data.contacts.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
 			} else data.contacts = "(no contacts provided)";
 
+			var embed = {
+				title: data.title || "(unnamed)",
+				description: data.description || "(no description provided)",
+				fields: [
+					{name: "Contact", value: data.contacts},
+					{name: "Link", value: data.invite}
+				],
+				thumbnail: {
+					url: data.pic_url || ""
+				},
+				color: data.color || 3447003,
+				footer: {
+					text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
+				}
+			}
+			if(post.server?.guild) embed.fields.push({name: "Members", value: post.server.guild.memberCount, inline: true});
+			if(data.activity) embed.fields.push({name: "Activity Rating", value: data.activity, inline: true});
+
 			try {
-				await this.bot.editMessage(post.channel_id, post.message_id, {embed: {
-					title: data.title || "(unnamed)",
-					description: data.description || "(no description provided)",
-					fields: [
-						{name: "Contact", value: data.contacts},
-						{name: "Link", value: data.invite},
-						{name: "Members", value: post.server && post.server.guild ? post.server.guild.memberCount : "(unavailable)"}
-					],
-					thumbnail: {
-						url: data.pic_url || ""
-					},
-					color: data.color || 3447003,
-					footer: {
-						text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
-					}
-				}})
+				await this.bot.editMessage(post.channel_id, post.message_id, {embed})
 			} catch(e) {
 				console.log(e);
 				return rej(e.message);

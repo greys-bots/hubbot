@@ -130,7 +130,8 @@ module.exports = async (bot) => {
 	        invite			TEXT,
 	        pic_url     	TEXT,
 	        color 			TEXT,
-	        visibility  	BOOLEAN
+	        visibility  	BOOLEAN,
+	        activity 		TEXT
 		);
 
 		CREATE TABLE IF NOT EXISTS starboards (

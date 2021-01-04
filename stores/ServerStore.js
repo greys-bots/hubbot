@@ -39,13 +39,14 @@ class ServerStore extends Collection {
 					invite,
 					pic_url,
 					color,
-					visibility
-				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+					visibility,
+					activity
+				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 				[host, server, (
 					data.contact_id && typeof data.contact_id == "string" ? 
 					[data.contact_id] : data.contact_id
 				), data.name, data.description, data.invite, data.pic_url,
-				data.color, data.visibility]);
+				data.color, data.visibility, data.activity]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
@@ -67,13 +68,14 @@ class ServerStore extends Collection {
 					invite,
 					pic_url,
 					color,
-					visibility
-				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+					visibility,
+					activity
+				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 				[host, server, (
 					data.contact_id && typeof data.contact_id == "string" ? 
 					[data.contact_id] : data.contact_id
 				), data.name, data.description, data.invite, data.pic_url,
-				data.color, data.visibility]);
+				data.color, data.visibility, data.activity]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
