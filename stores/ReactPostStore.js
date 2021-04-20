@@ -126,6 +126,7 @@ class ReactPostStore extends Collection {
 			}
 			
 			if(data.rows && data.rows[0]) {
+				var roles = [];
 				for(var role of data.rows[0].roles) {
 					try {
 						var rl = await this.bot.stores.reactRoles.getByRowID(server, role);
@@ -328,7 +329,7 @@ class ReactPostStore extends Collection {
 
 	async handleReactions(msg, emoji, user) {
 		return new Promise(async (res, rej) => {
-			if(this.bot.user.id == user) return;
+			if(this.bot.user.id == user.id) return;
 			var post = await this.get(msg.channel.guild.id, msg.id);
 			if(!post) return;
 			if(emoji.id) emoji.name = `:${emoji.name}:${emoji.id}`;
@@ -337,16 +338,16 @@ class ReactPostStore extends Collection {
 			// var roles = post.roles.map(r => msg.channel.guild.roles.find(x => x.id == r.role_id)).filter(x => x);
 			role = msg.channel.guild.roles.find(r => r.id == role.role_id);
 			if(!role) return;
-			var member = msg.channel.guild.members.find(m => m.id == user);
+			var member = await msg.channel.guild.getRESTMember(user.id);
 			if(!member) return;
 
 			try {
-				this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name.replace(/^:/,""), user);
-				if(member.roles.includes(role.id)) msg.channel.guild.removeMemberRole(user, role.id);
-				else msg.channel.guild.addMemberRole(user, role.id);
+				this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name.replace(/^:/,""), user.id);
+				if(member.roles.includes(role.id)) msg.channel.guild.removeMemberRole(user.id, role.id);
+				else msg.channel.guild.addMemberRole(user.id, role.id);
 			} catch(e) {
 				console.log(e);
-				var ch = await this.bot.getDMChannel(user);
+				var ch = await this.bot.getDMChannel(user.id);
 				if(!ch) rej(e.message); //can't deliver error? reject
 				if(e.stack.includes("addGuildMemberRole") || e.stack.includes("removeGuildMemberRole")) ch.createMessage(`Couldn't manage role **${rl.name}** in ${msg.channel.guild.name}. Please let a mod know that something went wrong`);
 				else ch.createMessage(`Couldn't remove your reaction in ${msg.channel.guild.name}. Please let a mod know something went wrong`);

@@ -168,18 +168,20 @@ class SyncMenuStore extends Collection {
 
 	async handleReactions(message, emoji, user) {
 		return new Promise(async (res, rej) => {
-			if(this.bot.user.id == user) return res();
+			if(this.bot.user.id == user.id) return res();
+			if(!message.channel.guild) return res();
+			if(!["✅", "❌"].includes(emoji.name)) return res();
+			
 			try {
 				message = await this.bot.getMessage(message.channel.id, message.id);
 				var smenu = await this.get(message.channel.guild.id, message.channel.id, message.id);
 				if(!smenu) return res();
-				if(!["✅", "❌"].includes(emoji.name)) return res();
 				var request = await this.getRequest(message.channel.guild.id, smenu.reply_guild);
 				if(!request) return res();
 				console.log(request);
 				var embed = message.embeds[0];
-				var member = await this.bot.utils.fetchUser(this.bot, user);
-				await this.bot.removeMessageReaction(message.channel.id, message.id, emoji.name, user);
+				var member = await this.bot.utils.fetchUser(this.bot, user.id);
+				await this.bot.removeMessageReaction(message.channel.id, message.id, emoji.name, user.id);
 			} catch(e) {
 				if(!e.message.toLowerCase().includes('unknown message')) console.log(e);
 				return rej(e.message || e);

@@ -247,7 +247,7 @@ class StarPostStore extends Collection {
 			if(!board) return res();
 			var cfg = await this.bot.stores.configs.get(msg.guild.id);
 			var tolerance = board.tolerance ? board.tolerance : cfg.starboard || 2;
-			var member = msg.guild.members.find(m => m.id == user);
+			var member = msg.guild.members.find(m => m.id == user.id);
 			if(!member) return rej("Member not found");
 
 			var post = await this.getByOriginal(msg.guild.id, msg.id);
@@ -276,7 +276,7 @@ class StarPostStore extends Collection {
 			if(emoji != "bulk") {
 				//not removeAll reaction event, so we need some extra logic
 				var config = await this.bot.stores.configs.get(msg.channel.guild.id);
-				if(config && config.blacklist && config.blacklist.includes(user)) return;
+				if(config && config.blacklist && config.blacklist.includes(user.id)) return;
 
 				var reaction = emoji.id ? `:${emoji.name}:${emoji.id}` : emoji.name;
 				var count = msg.reactions[reaction.replace(/^:/,"")] ? msg.reactions[reaction.replace(/^:/,"")].count : 0;

@@ -128,27 +128,21 @@ class TicketPostStore extends Collection {
 
 	async handleReactions(msg, emoji, user) {
 		return new Promise(async (res, rej) => {
-			if(this.bot.user.id == user) return;
+			if(this.bot.user.id == user.id) return;
+			if(!msg.channel.guild) return;
+			var tpost = await this.get(msg.channel.guild.id, msg.id);
+			if(!tpost) return res();
+
 			try {
 				msg = await this.bot.getMessage(msg.channel.id, msg.id);
+				await this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user.id);
 			} catch(e) {
 				if(!e.message.toLowerCase().includes("unknown message")) console.log(e);
 				return rej(e.message);
 			}
-
-			if(!msg.guild) return res();
-
-			var tpost = await this.get(msg.channel.guild.id, msg.id);
-			if(!tpost) return res();
-			try {
-				await this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name, user);
-			} catch(e) {
-				console.log(e);
-				return rej(e.message);
-			}
 			
-			var ch = await this.bot.getDMChannel(user);
-			var tickets = await this.bot.stores.tickets.getByUser(msg.channel.guild.id, user);
+			var ch = await this.bot.getDMChannel(user.id);
+			var tickets = await this.bot.stores.tickets.getByUser(msg.channel.guild.id, user.id);
 			if(tickets && tickets.length >= 5) {
 				try {
 					return ch.createMessage("Couldn't open ticket: you already have 5 open for that server")
@@ -157,9 +151,8 @@ class TicketPostStore extends Collection {
 					return rej(e.message);
 				}
 			}
-
-			var us = await this.bot.utils.fetchUser(this.bot, user);
-			var ticket = await this.bot.stores.tickets.create(msg.channel.guild.id, {opener: us});
+		
+			var ticket = await this.bot.stores.tickets.create(msg.channel.guild.id, {opener: user});
 			if(!ticket.hid) {
 				try {
 					ch.createMessage("Couldn't open your support ticket:\n"+ticket.e);

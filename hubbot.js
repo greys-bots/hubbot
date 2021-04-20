@@ -36,6 +36,14 @@ bot.logVars = {
 	"$SERVER.NAME": '${guild.name || "(no name)"}'
 }
 
+const updateStatus = async function(){
+	bot.stores.servers.getAll(process.env.HUB_ID).then(data => {
+		if(data && data.length > 0) bot.editStatus({name: `Listing ${data.length} servers and counting!`});
+	});
+
+	setTimeout(()=> updateStatus(),600000)
+}
+
 bot.AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
 
 const recursivelyReadDirectory = function(dir) {
@@ -328,6 +336,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 
 bot.on("ready",()=>{
 	console.log("Ready");
+	updateStatus();
 })
 
 setup();

@@ -4,16 +4,16 @@
   "description": "A simple bot to help PluralHub",
   "main": "hubbot.js",
   "dependencies": {
-    "dblite": "^1.0.1",
-    "discord.js": "^11.5.1",
+    "dblite": "^1.1.4",
+    "discord.js": "^11.6.4",
     "dotenv": "^7.0.0",
-    "eris": "^0.12.1",
-    "eris-additions": "^1.2.5",
-    "mysql": "^2.17.1",
-    "node-fetch": "^2.6.0",
-    "node-ipc": "^9.1.1",
-    "pg": "^8.0.3",
-    "tinycolor2": "^1.4.1"
+    "eris": "^0.15.0",
+    "eris-additions": "^1.4.1",
+    "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
+    "node-ipc": "^9.1.4",
+    "pg": "^8.6.0",
+    "tinycolor2": "^1.4.2"
   },
   "devDependencies": {},
   "scripts": {
