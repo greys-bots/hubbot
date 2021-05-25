@@ -342,11 +342,11 @@ module.exports.subcommands.setup = {
 
 					try {
 						var synced = await bot.stores.syncConfigs.getSynced(msg.guild.id);
-						if(synced {
+						if(synced) {
 							for(var snc of synced) {
 								await bot.createMessage(snc.sync_notifs, "Your synced server is no longer syncable. You will no longer receive sync notifications unless you sync to another server");
 							}
-						})
+						}
 						await bot.stores.syncConfigs.unsync(msg.guild.id);
 					} catch(e) {
 						return "ERR while unsyncing servers: " + (e.message || e);
