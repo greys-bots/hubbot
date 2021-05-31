@@ -146,24 +146,26 @@ module.exports.subcommands.add = {
 		var result = [];
 		var roles = args.slice(1).join(" ").split(/,\s+/g);
 		var max = category.posts && category.posts[0] ? category.posts.sort((a,b)=> a.page - b.page)[0].page : 0;
+		var rrs = await bot.stores.reactRoles.getAll(msg.guild.id);
 		for(var rl of roles) {
-			var role = msg.guild.roles.find(r => r.id == rl.replace(/[<@&>]/g, "") || r.name.toLowerCase() == rl.toLowerCase());
+			var role = msg.guild.roles.find(r => [r.id, r.name].includes(rl.replace(/[<@&>]/g, "").toLowerCase()));
 			if(!role) {
 				result.push({succ: false, name: rl, reason: "Role not found"})
 				continue;
 			}
-			var rr = await bot.stores.reactRoles.get(msg.guild.id, role.id);
+			var rr = rrs.find(r => r.role_id == role.id);
 			if(!rr) {
 				result.push({succ: false, name: rl, reason: "React role not found"});
+				continue;
+			}
+
+			if(category.roles.find(r => r.id == rr.id)) {
+				result.push({succ: false, name: role.name, reason: "React role already in category"});
+			} else if(category.roles.find(r => r.emoji == rr.emoji)) {
+				result.push({succ: false, name: role.name, reason: "React role with that emoji already in category"});
 			} else {
-				if(category.roles.find(r => r.id == rr.id)) {
-					result.push({succ: false, name: role.name, reason: "React role already in category"});
-				} else if(category.roles.find(r => r.emoji == rr.emoji)) {
-					result.push({succ: false, name: role.name, reason: "React role with that emoji already in category"});
-				} else {
-					result.push({succ: true, name: role.name});
-					category.raw_roles.push(rr.id);
-				}
+				result.push({succ: true, name: role.name});
+				category.raw_roles.push(rr.id);
 			}
 		}
 
