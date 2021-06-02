@@ -78,7 +78,8 @@ module.exports = {
 			title: "Results",
 			fields: [
 				{name: "Logged", value: results.filter(r => r.success).map(r => `${r.name} (${r.id}) | Log ID: ${r.code}`).join("\n") || "(none)"},
-				{name: "Not Logged", value: results.filter(r => !r.success).map(r => `${r.name} (${r.id}) | Reason: ${r.reason}`).join("\n") || "(none)"}
+				{name: "Not Logged", value: results.filter(r => !r.success).map(r => `${r.name} (${r.id}) | Reason: ${r.reason}`).join("\n") || "(none)"},
+				{name: "NOTE", value: "**Please manually check for any remaining listings!** A fix for this is still being worked on ✨"}
 			],
 			timestamp: date
 		}};
