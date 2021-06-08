@@ -113,7 +113,7 @@ module.exports.subcommands.config = {
 		resp = await msg.channel.awaitMessages(m => m.author.id == msg.author.id,{time:1000*60,maxMatches:1});
 		if(!resp[0]) return "Action cancelled: timed out";
 		if(resp[0].content.toLowerCase() != "skip") archives = await msg.guild.channels.find(c => (c.id == resp[0].content.replace(/[<#>]/g,"") || c.name.toLowerCase() == resp[0].content.toLowerCase()) && c.type == 0);
-		if(!archives && resp[0].content.toLowerCase() != "skip") return "Action cancelled: category not found";
+		if(!archives && resp[0].content.toLowerCase() != "skip") return "Action cancelled: channel not found";
 
 		try {
 			if(cfg.category_id == "") await bot.stores.ticketConfigs.create(msg.guild.id, {category_id: category.id, archives_id: archives.id});

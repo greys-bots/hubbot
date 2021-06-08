@@ -68,7 +68,7 @@ class TicketConfigStore extends Collection {
 	async update(server, data = {}) {
 		return new Promise(async (res, rej) => {
 			try {
-				await this.db.query(`UPDATE ticket_configs SET ${Object.keys(data).map((k, i) => k+"=$"+(i+2)).join(",")} WHERE server_id = $1`,[...Object.values(data), server]);
+				await this.db.query(`UPDATE ticket_configs SET ${Object.keys(data).map((k, i) => k+"=$"+(i+2)).join(",")} WHERE server_id = $1`,[server, ...Object.values(data)]);
 			} catch(e) {
 				console.log(e);
 				return rej(e.message);
