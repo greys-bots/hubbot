@@ -4,14 +4,14 @@ module.exports = async (msg, bot) => {
 	var prefix = new RegExp("^"+bot.prefix, "i");
 	if(!msg.content.toLowerCase().match(prefix)) return;
 	var {command, args, permcheck} = await bot.parseCommand(bot, msg, msg.content.replace(prefix, "").split(" "));
-	if(!command) ({command, args} = await bot.parseCustomCommand(bot, msg, msg.content.replace(prefix, "").split(" ")));
+	if(!command) ({command, args, permcheck} = await bot.parseCustomCommand(bot, msg, msg.content.replace(prefix, "").split(" ")));
 	if(!command) return msg.channel.createMessage("Command not found");
 	
 	console.log(command.name);
+	if(!permcheck) return msg.channel.createMessage("You don't have permission to do this!");
 	if(command.guildOnly && !msg.guild) return msg.channel.createMessage("This command can only be used in guilds");
 	var cfg = msg.guild ? await bot.stores.configs.get(msg.guild.id) : {};
 	if(cfg && cfg.blacklist && cfg.blacklist.includes(msg.author.id)) return msg.channel.createMessage("You have been banned from using commands :(");
-	if(command.permissions && !permcheck) return msg.channel.createMessage("You don't have permission to do this!");
 	
 	var result;
 	try {

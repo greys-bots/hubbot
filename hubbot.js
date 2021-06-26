@@ -23,8 +23,8 @@ bot.customActions = [
 	{name: "args.hr", replace: (arg) => "msg.guild.members.find(m => m.id == "+arg+").hasRole"},
 	{name: "args.rr", replace: (arg) => "await msg.guild.members.find(m => m.id == "+arg+").removeRole"},
 	{name: "args.ar", replace: (arg) => "await msg.guild.members.find(m => m.id == "+arg+").addRole"},
-	{name: "args.bl", replace: (arg) => "await bot.commands.blacklist.subcommands.add.execute(bot, msg, [msg.guild.members.find(m => m.id == "+arg+").id])"},
-	{name: "rf\\(('.*')\\)", replace: "msg.guild.roles.find(r => r.name.toLowerCase() == $1.toLowerCase() || r.id == $1).id", regex: true}
+	{name: "args.bl", replace: (arg) => "await bot.commands.get('blacklist').subcommands.add.execute(bot, msg, [msg.guild.members.find(m => m.id == "+arg+").id])"},
+	{name: "rf\\(('.*')\\)", replace: "msg.guild.roles.find(r => [r.name.toLowerCase(), r.id].includes($1.toLowerCase()))?.id", regex: true}
 ]
 
 bot.banVars = {
@@ -163,11 +163,19 @@ bot.parseCommand = async function(bot, msg, args, command) {
 
 bot.parseCustomCommand = async function(bot, msg, args) {
 	return new Promise(async res => {
-		if(!args || !args[0]) return res(undefined);
-		if(!msg.guild) return res(undefined);
+		if(!args || !args[0]) return res({});
+		if(!msg.guild) return res({});
 		var name = args.shift();
 		var cmd = await bot.stores.customCommands.get(msg.guild.id, name);
 		if(!cmd) return res({});
+
+		if(cmd.usage_list && Object.keys(cmd.usage_list).find(k => k.length)) {
+			var rlcheck = cmd.usage_list.roles?.length && msg.member.roles.find(r => cmd.usage_list.roles.includes(r));
+			var chcheck = cmd.usage_list.channels?.length && cmd.usage_list.channels.includes(msg.channel.id);
+
+			if(!cmd.usage_type && (rlcheck || chcheck)) return res({command: cmd, args, permcheck: false});
+			if(cmd.usage_type && !(rlcheck || chcheck)) return res({command: cmd, args, permcheck: false});
+		}
 
 		cmd.newActions = [];
 
@@ -330,7 +338,7 @@ bot.parseCustomCommand = async function(bot, msg, args) {
 
 		cmd.name = name;
 
-		res({command: cmd, args})
+		res({command: cmd, args, permcheck: true})
 	})
 }
 

@@ -161,3 +161,173 @@ module.exports.subcommands.delete = {
 	guildOnly: true,
 	permissions: ["manageGuild"]
 }
+
+module.exports.subcommands.blacklist = {
+	help: ()=> "Blacklist channels/roles from using a custom command",
+	usage: ()=> [
+		' [name] - Views an existing blacklist',
+		' [name] add [channel/role] - Adds the given channel/role to the blacklist',
+		' [name] remove [channel/role] - Removes the channel/role from the blacklist',
+		' [name] clear - Clear the blacklist',
+		' [name] switch - Switches from the whitelist to the blacklist'
+	],
+	execute: async (bot, msg, args) => {
+		if(!args[0]) return "Please provide a command";
+
+		var cmd = await bot.stores.customCommands.get(msg.guild.id, args[0].toLowerCase());
+		if(!cmd) return "Command does not exist";
+		if(cmd.usage_type) return 'Command currently set to `whiitelist` mode!';
+
+		if(!args[1]) {
+			if(!cmd.usage_list.channels?.[0] && !cmd.usage_list.roles?.[0])
+				return 'Nothing blacklisted for that command';
+
+			return {embed: {
+				title: "Blacklist",
+				description: `Blacklist for command ${cmd.name}`,
+				fields: [
+					{name: "Channels", value: cmd.usage_list.channels.map(c => `<#${c}>`).join("\n") || "(none)"},
+					{name: "Roles", value: cmd.usage_list.roles.map(r => `<@&${r}>`).join("\n") || "(none)"}
+				],
+				footer: {text: `use "${bot.prefix}cc wl ${cmd.name} switch" to use a whitelist instead`}
+			}}
+		}
+
+		switch(args[1].toLowerCase()) {
+			case 'add':
+				if(!args[2]) return 'Please provide a channel/role to add to the blacklist';
+
+				var arg = args[2].toLowerCase().replace(/[<@&#>]/g, "");
+				var object = msg.guild.channels.find(ch => [ch.name, ch.id].includes(arg));
+				var type = 'channels';
+				if(!object) {
+					object = msg.guild.roles.find(r => [r.name, r.id].includes(arg));
+					type = 'roles';
+				}
+				if(!object) return 'Object not found!';
+
+				if(!cmd.usage_list[type].includes(object.id)) cmd.usage_list[type].push(object.id);
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: cmd.usage_list});
+				return 'Object added to blacklist!';
+			case 'remove':
+				if(!args[2]) return 'Please provide a channel/role to remove from the blacklist';
+
+				var arg = args[2].toLowerCase().replace(/[<@&#>]/g, "");
+				var object = msg.guild.channels.find(ch => [ch.name, ch.id].includes(arg));
+				var type = 'channels';
+				if(!object) {
+					object = msg.guild.roles.find(r => [r.name, r.id].includes(arg));
+					type = 'roles';
+				}
+				if(!object) return 'Object not found!';
+
+				cmd.usage_list[type].filter(x => x != object.id);
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: cmd.usage_list});
+				return 'Object removed from blacklist!';
+				break;
+			case 'clear':
+				var message = await msg.channel.createMessage("Are you sure you want to clear the blacklist?");
+				['✅','❌'].forEach(r => message.addReaction(r));
+				var conf = await bot.utils.getConfirmation(bot, message, msg.author);
+				if(conf.msg) return conf.msg;
+
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: {channels: [], roles: []}});
+				return 'Blacklist cleared!';
+				break;
+			case 'switch':
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_type: true});
+				return 'Whitelist turned on! Use the whitelist command from now on';
+				break;
+			default:
+				return `Subcommand not found; use \`${bot.prefix}h cc blacklist\` for more info`
+		}
+	},
+	alias: ['bl'],
+	guildOnly: true,
+	permissions: ['manageGuild']
+}
+
+module.exports.subcommands.whitelist = {
+	help: ()=> "Whitelist channels/roles for using a custom command",
+	usage: ()=> [
+		' [name] - Views an existing whitelist',
+		' [name] add [channel/role] - Adds the given channel/role to the whitelist',
+		' [name] remove [channel/role] - Removes the channel/role from the whitelist',
+		' [name] clear - Clear the whitelist',
+		' [name] switch - Switches from the whitelist to the whitelist'
+	],
+	execute: async (bot, msg, args) => {
+		if(!args[0]) return "Please provide a command";
+
+		var cmd = await bot.stores.customCommands.get(msg.guild.id, args[0].toLowerCase());
+		if(!cmd) return "Command does not exist";
+		if(!cmd.usage_type) return 'Command currently set to `blacklist` mode!';
+
+		if(!args[1]) {
+			if(!cmd.usage_list.channels?.[0] && !cmd.usage_list.roles?.[0])
+				return 'Nothing whitelisted for that command';
+
+			return {embed: {
+				title: "Whitelist",
+				description: `Whitelist for command ${cmd.name}`,
+				fields: [
+					{name: "Channels", value: cmd.usage_list.channels.map(c => `<#${c}>`).join("\n") || "(none)"},
+					{name: "Roles", value: cmd.usage_list.roles.map(r => `<@&${r}>`).join("\n") || "(none)"}
+				],
+				footer: {text: `use "${bot.prefix}cc bl ${cmd.name} switch" to use a blacklist instead`}
+			}}
+		}
+
+		switch(args[1].toLowerCase()) {
+			case 'add':
+				if(!args[2]) return 'Please provide a channel/role to add to the whitelist';
+
+				var arg = args[2].toLowerCase().replace(/[<@&#>]/g, "");
+				var object = msg.guild.channels.find(ch => [ch.name, ch.id].includes(arg));
+				var type = 'channels';
+				if(!object) {
+					object = msg.guild.roles.find(r => [r.name, r.id].includes(arg));
+					type = 'roles';
+				}
+				if(!object) return 'Object not found!';
+
+				if(!cmd.usage_list[type].includes(object.id)) cmd.usage_list[type].push(object.id);
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: cmd.usage_list});
+				return 'Object added to whitelist!';
+			case 'remove':
+				if(!args[2]) return 'Please provide a channel/role to remove from the whitelist';
+
+				var arg = args[2].toLowerCase().replace(/[<@&#>]/g, "");
+				var object = msg.guild.channels.find(ch => [ch.name, ch.id].includes(arg));
+				var type = 'channels';
+				if(!object) {
+					object = msg.guild.roles.find(r => [r.name, r.id].includes(arg));
+					type = 'roles';
+				}
+				if(!object) return 'Object not found!';
+
+				cmd.usage_list[type].filter(x => x != object.id);
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: cmd.usage_list});
+				return 'Object removed from whitelist!';
+				break;
+			case 'clear':
+				var message = await msg.channel.createMessage("Are you sure you want to clear the whitelist?");
+				['✅','❌'].forEach(r => message.addReaction(r));
+				var conf = await bot.utils.getConfirmation(bot, message, msg.author);
+				if(conf.msg) return conf.msg;
+
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_list: {channels: [], roles: []}});
+				return 'Whitelist cleared!';
+				break;
+			case 'switch':
+				await bot.stores.customCommands.update(msg.guild.id, cmd.name, {usage_type: false});
+				return 'Blacklist turned on! Use the blacklist command from now on';
+				break;
+			default:
+				return `Subcommand not found; use \`${bot.prefix}h cc whitelist\` for more info`
+		}
+	},
+	alias: ['wl'],
+	guildOnly: true,
+	permissions: ['manageGuild']
+}

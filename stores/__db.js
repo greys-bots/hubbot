@@ -24,7 +24,9 @@ module.exports = async (bot) => {
 			name 			TEXT,
 			actions 		JSONB,
 			target 			TEXT,
-			del 			BOOLEAN
+			del 			BOOLEAN,
+			usage_list 		JSONB,
+			usage_type 		BOOLEAN
 		);
 
 		CREATE TABLE IF NOT EXISTS configs (

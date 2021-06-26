@@ -1,3 +1,8 @@
+const {
+	confirmVals:STRINGS,
+	confirmReacts:REACTS
+} = require('../extras');
+
 module.exports = {
 	genEmbeds: async (bot, arr, genFunc, info = {}, fieldnum, extras = {}) => {
 		return new Promise(async res => {
@@ -167,5 +172,41 @@ module.exports = {
 		} else	{
 			return text;
 		}
-	}
+	},
+
+	getConfirmation: async (bot, msg, user) => {
+		return new Promise(res => {
+
+			function msgListener(message) {
+				if(message.channel.id != msg.channel.id ||
+				   message.author.id != user.id) return;
+
+				clearTimeout(timeout);
+				bot.removeListener('messageCreate', msgListener);
+				bot.removeListener('messageReactionAdd', reactListener);
+				if(STRINGS[0].includes(message.content.toLowerCase())) return res({confirmed: true, message});
+				else return res({confirmed: false, message, msg: 'Action cancelled!'});
+			}
+
+			function reactListener(message, react, ruser) {
+				if(message.channel.id != msg.channel.id ||
+				   ruser.id != user.id) return;
+
+				clearTimeout(timeout);
+				bot.removeListener('messageCreate', msgListener);
+				bot.removeListener('messageReactionAdd', reactListener);
+				if(react.emoji.name == REACTS[0]) return res({confirmed: true, react});
+				else return res({confirmed: false, react, msg: 'Action cancelled!'});
+			}
+
+			const timeout = setTimeout(async () => {
+				bot.removeListener('messageCreate', msgListener);
+				bot.removeListener('messageReactionAdd', reactListener);
+				res({confirmed: false, msg: 'ERR! Timed out!'})
+			}, 30000);
+
+			bot.on('messageCreate', msgListener);
+			bot.on('messageReactionAdd', reactListener);
+		})
+	},
 }

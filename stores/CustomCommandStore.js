@@ -16,9 +16,12 @@ class CommandStore extends Collection {
 					name,
 					actions,
 					target,
-					del
-				) VALUES ($1,$2,$3,$4,$5)`,
-				[server, name, JSON.stringify( data.actions || []), data.target || "member", data.del || false]);
+					del,
+					usage_list,
+					usage_type
+				) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+				[server, name, JSON.stringify( data.actions || []), data.target || "member", data.del || false,
+				 data.usage_list || {channels: [], roles: []}, data.usage_type || 0]);
 				//have to manually stringify JSON arrays due to bug in pg lib
 			} catch(e) {
 				console.log(e);
@@ -37,10 +40,12 @@ class CommandStore extends Collection {
 					name,
 					actions,
 					target,
-					del
-				) VALUES ($1,$2,$3,$4,$5)`,
-				[server, name, JSON.stringify( data.actions || []), data.target || "member", data.del || false]);
-				//have to manually stringify JSON arrays due to bug in pg lib
+					del,
+					usage_list,
+					usage_type
+				) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+				[server, name, JSON.stringify( data.actions || []), data.target || "member", data.del || false,
+				 data.usage_list || {channels: [], roles: []}, data.usage_type || 0]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
