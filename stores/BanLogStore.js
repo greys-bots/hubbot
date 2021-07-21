@@ -326,39 +326,39 @@ class BanLogStore extends Collection {
 		})
 	}
 
-	async handleReactions(msg, emoji, user) {
-		return new Promise(async res => {
-			if(this.bot.user.id == user.id) return;
-			if(!msg.channel.guild) return;
-			if(!["❓","❔"].includes(emoji.name)) return;
-			var log = await this.getByMessage(msg.channel.guild.id, msg.channel.id, msg.id);
-			if(!log) return res();
+	// async handleReactions(msg, emoji, user) {
+	// 	return new Promise(async res => {
+	// 		if(this.bot.user.id == user.id) return;
+	// 		if(!msg.channel.guild) return;
+	// 		if(!["❓","❔"].includes(emoji.name)) return;
+	// 		var log = await this.getByMessage(msg.channel.guild.id, msg.channel.id, msg.id);
+	// 		if(!log) return res();
 
-			try {
-				msg = await this.bot.getMessage(msg.channel.id, msg.id);
-				await msg.removeReaction(emoji.name, user.id);
-				var ch = await this.bot.getDMChannel(user.id);
-				if(!ch) return rej("Couldn't get user DM channel");
+	// 		try {
+	// 			msg = await this.bot.getMessage(msg.channel.id, msg.id);
+	// 			await msg.removeReaction(emoji.name, user.id);
+	// 			var ch = await this.bot.getDMChannel(user.id);
+	// 			if(!ch) return rej("Couldn't get user DM channel");
 
-				if(!log.receipt) return ch.createMessage("No receipt has been registered for that ban :(");
-				var users = await this.bot.utils.verifyUsers(this.bot, log.embed.fields[1].value.split("\n"));
-				ch.createMessage({embed: {
-					title: "Ban Receipt",
-					description: log.receipt.message,
-					fields: [
-						{name: "Users Banned", value: users.info.map(u => `${u.username}#${u.discriminator} (${u.id})`).concat(users.fail.map(u => `${u} - Member deleted?`)).join("\n")},
-						{name: "Reason", value: log.reason || log.embed.fields[2].value || "(no reason provided)"}
-					]
-				}})
-			} catch(e) {
-				if(e.message.includes("Unknown Message")) return;
-				console.log(e);
-				return rej(e.message);
-			}
+	// 			if(!log.receipt) return ch.createMessage("No receipt has been registered for that ban :(");
+	// 			var users = await this.bot.utils.verifyUsers(this.bot, log.embed.fields[1].value.split("\n"));
+	// 			ch.createMessage({embed: {
+	// 				title: "Ban Receipt",
+	// 				description: log.receipt.message,
+	// 				fields: [
+	// 					{name: "Users Banned", value: users.info.map(u => `${u.username}#${u.discriminator} (${u.id})`).concat(users.fail.map(u => `${u} - Member deleted?`)).join("\n")},
+	// 					{name: "Reason", value: log.reason || log.embed.fields[2].value || "(no reason provided)"}
+	// 				]
+	// 			}})
+	// 		} catch(e) {
+	// 			if(e.message.includes("Unknown Message")) return;
+	// 			console.log(e);
+	// 			return rej(e.message);
+	// 		}
 
-			res();
-		});
-	}
+	// 		res();
+	// 	});
+	// }
 }
 
 module.exports = (bot, db) => new BanLogStore(bot, db);

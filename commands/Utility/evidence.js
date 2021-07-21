@@ -25,7 +25,9 @@ module.exports = {
 		}};
 	},
 	subcommands: {},
-	alias: ['receipt', 'receipts']
+	alias: ['receipt', 'receipts'],
+	guildOnly: true,
+	permissions: ['manageMessages']
 }
 
 module.exports.subcommands.add = {
