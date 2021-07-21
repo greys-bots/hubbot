@@ -24,13 +24,13 @@ class BanLogStore extends Collection {
 			})	
 		})
 		
-		this.bot.on("messageReactionAdd", (...args) => {
-			try {
-				this.handleReactions(...args, this)
-			} catch(e) {
-				console.log(e);
-			}
-		})
+		// this.bot.on("messageReactionAdd", (...args) => {
+		// 	try {
+		// 		this.handleReactions(...args, this)
+		// 	} catch(e) {
+		// 		console.log(e);
+		// 	}
+		// })
 	}
 
 	async create(server, hid, data = {}) {
