@@ -65,13 +65,13 @@ module.exports = {
 					var ch = await bot.getDMChannel(membs[i]);
 					if(ch) {
 						try {
-							ch.createMessage(conf.ban_message);
+							await ch.createMessage(conf.ban_message);
 						} catch(e) {
 							console.log(e.stack)
 						}
 					}
 				}
-				bot.banGuildMember(msg.guild.id, membs[i], 0, reason || "Banned through command.");
+				await bot.banGuildMember(msg.guild.id, membs[i], 0, reason || "Banned through command.");
 				succ.push({id: membs[i], pass: true, info: u})
 			}
 		}
