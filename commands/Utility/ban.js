@@ -48,6 +48,8 @@ module.exports = {
 			})
 		}
 		var succ = [];
+		var uns = [{name: '**__Last Known Usernames__**', value: ''}];
+		var idfs = [{name: '**__User IDs__**', value: ''}];
 		for(var i = 0; i < membs.length; i++) {
 			var u;
 			try {
@@ -58,9 +60,7 @@ module.exports = {
 				succ.push({id: membs[i], pass: false, reason: "User does not exist"});
 			}
 
-			if(b && b.find(x => x.user.id == membs[i])) {
-				succ.push({id:membs[i], pass:true, info:u});
-			} else {
+			if(b && !b.find(x => x.user.id == membs[i])) {
 				if(msg.guild.members.find(mb => mb.id == membs[i]) && conf.banmsg) {
 					var ch = await bot.getDMChannel(membs[i]);
 					if(ch) {
@@ -72,8 +72,23 @@ module.exports = {
 					}
 				}
 				await bot.banGuildMember(msg.guild.id, membs[i], 0, reason || "Banned through command.");
-				succ.push({id: membs[i], pass: true, info: u})
+			
 			}
+
+			succ.push({id:membs[i], pass:true, info:u});
+			if(uns[uns.length - 1].value.length + `\n${u.username}#${u.discriminator}`.length > 1024) {
+				uns.push({
+					name: '**__Last Known Usernames__** (cont)',
+					value: `${u.username}#${u.discriminator}`
+				})
+			} else uns[uns.length - 1].value += `\n${u.username}#${u.discriminator}`;
+
+			if(idfs[idfs.length - 1].value.length + `\n${u.id}`.length > 1024) {
+				idfs.push({
+					name: '**__User IDs__** (cont)',
+					value: u.id
+				})
+			} else idfs[idfs.length - 1].value += `\n${u.id}`;
 		}
 
 		var message;
@@ -96,22 +111,14 @@ module.exports = {
 			var channel = msg.guild.channels.find(ch => ch.id == conf.banlog_channel);
 		else channel = msg.channel;
 
+		var fields = uns.concat(idfs);
+		fields.push({
+			name: "**__Reason__**",
+			value: reason || "(no reason given)"
+		})
 		var message = await channel.createMessage({embed: {
 			title: "Members Banned",
-			fields: [
-			{
-				name: "**__Last Known Usernames__**",
-				value: (succ.filter(x=> x.pass).map(m => `${m.info.username}#${m.info.discriminator}`).join("\n")) || "Something went wrong"
-			},
-			{
-				name: "**__User IDs__**",
-				value: (succ.filter(x=> x.pass).map(m => m.id).join("\n")) || "Something went wrong"
-			},
-			{
-				name: "**__Reason__**",
-				value: reason || "(no reason given)"
-			}
-			],
+			fields,
 			color: 9256253,
 			footer: {
 				text: code
