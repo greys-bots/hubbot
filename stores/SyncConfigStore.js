@@ -23,7 +23,7 @@ class SyncConfigStore extends Collection {
 							`New member **${member.username}#${member.discriminator}** (${member.id})`,
 							` has been banned from your currently synced server.\n`,
 							`Reason:\n`,
-							logs[0].embed.fields[2].value
+							logs[0].reason
 						].join(""),
 						color: parseInt("aa5555", 16)
 					}})
