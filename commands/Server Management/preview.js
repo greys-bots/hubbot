@@ -13,23 +13,7 @@ module.exports = {
 			contacts = dat.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
 		}
 
-		var embed = {
-			title: guild.name || "(unnamed)",
-			description: guild.description || "(no description provided)",
-			fields: [
-				{name: "Contact", value: contacts || "(no contact registered)"},
-				{name: "Link", value: guild.invite ? guild.invite : "(no link provided)"}
-			],
-			thumbnail: {
-				url: guild.pic_url
-			},
-			color: 3447003,
-			footer: {
-				text: `ID: ${guild.server_id} | This server ${guild.visibility ? "is" : "is not"} visible on the website`
-			}
-		}
-		if(guild.guild) embed.fields.push({name: "Members", value: guild.guild.memberCount, inline: true});
-		if(guild.activity) embed.fields.push({name: "Activity Rating", value: guild.activity, inline: true});
+		var embed = bot.utils.serverEmbed({guild, contacts});
 
 		return {embed};
 	},

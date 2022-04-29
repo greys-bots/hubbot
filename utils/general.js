@@ -209,4 +209,32 @@ module.exports = {
 			bot.on('messageReactionAdd', reactListener);
 		})
 	},
+
+	serverEmbed({guild, contacts}) {
+		var color = (
+			guild.color && typeof guild.color == 'string' ?
+			parseInt(guild.color, 16) :
+			guild.color
+		) ?? 3447003;
+		var embed = {
+			title: guild.name || "(unnamed)",
+			description: guild.description || "(no description provided)",
+			fields: [
+				{name: "Contact", value: contacts},
+				{name: "Link", value: guild.invite || "(no link provided)"}
+			],
+			thumbnail: {
+				url: guild.pic_url || ""
+			},
+			color,
+			footer: {
+				text: `ID: ${guild.server_id}`
+			}
+		}
+
+		if(guild.guild) embed.fields.push({name: "Members", value: guild.guild.memberCount, inline: true});
+		if(guild.activity) embed.fields.push({name: "Activity Rating", value: guild.activity, inline: true});
+
+		return embed;
+	}
 }

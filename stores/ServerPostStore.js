@@ -255,40 +255,26 @@ class ServerPostStore extends Collection {
 
 			//work out any missing parts
 			data = {
-				title: data.name || post.message.embeds[0].title,
-				description: data.description || post.message.embeds[0].description,
-				invite: data.invite || post.message.embeds[0].fields[1].value,
-				pic_url: data.pic_url || (post.message.embeds[0].thumbnail ? post.message.embeds[0].thumbnail.url : null),
-				color: data.color ? parseInt(data.color, 16) : post.message.embeds[0].color,
+				name: data.name ?? post.message.embeds[0].title,
+				description: data.description ?? post.message.embeds[0].description,
+				invite: data.invite ?? post.message.embeds[0].fields[1].value,
+				pic_url: data.pic_url ?? (post.message.embeds[0].thumbnail ? post.message.embeds[0].thumbnail.url : null),
+				color: data.color ?? post.message.embeds[0].color,
 				contact_id: data.contact_id,
 				visibility: data.visibility,
 				activity: data.activity,
-				footer: {text: `ID: ${data.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`}
+				server_id: post.server.server_id,
+				guild: post.server?.guild
 			};
 
+			var contacts;
 			if(data.contact_id) {
-				data.contacts = await this.bot.utils.verifyUsers(this.bot, data.contact_id);
-				if(!data.contacts.pass[0]) return rej("Contacts invalid");
-				data.contacts = data.contacts.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
-			} else data.contacts = "(no contacts provided)";
+				contacts = await this.bot.utils.verifyUsers(this.bot, data.contact_id);
+				if(!contacts.pass[0]) return rej("Contacts invalid");
+				contacts = contacts.info.map(user => `${user.mention} (${user.username}#${user.discriminator})`).join("\n");
+			} else contacts = "(no contacts provided)";
 
-			var embed = {
-				title: data.title || "(unnamed)",
-				description: data.description || "(no description provided)",
-				fields: [
-					{name: "Contact", value: data.contacts},
-					{name: "Link", value: data.invite}
-				],
-				thumbnail: {
-					url: data.pic_url || ""
-				},
-				color: data.color || 3447003,
-				footer: {
-					text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
-				}
-			}
-			if(post.server?.guild) embed.fields.push({name: "Members", value: post.server.guild.memberCount, inline: true});
-			if(data.activity) embed.fields.push({name: "Activity Rating", value: data.activity, inline: true});
+			var embed = this.bot.utils.serverEmbed({guild: data, contacts});
 
 			try {
 				await this.bot.editMessage(post.channel_id, post.message_id, {embed})
@@ -416,13 +402,13 @@ class ServerPostStore extends Collection {
 			}
 
 			var data = {
-				name: post.server.name || post.message.embeds[0].title,
-				description: post.server.description || post.message.embeds[0].description,
-				invite: post.server.invite || post.message.embeds[0].fields[1].value,
-				pic_url: post.server.pic_url || (post.message.embeds[0].thumbnail ? post.message.embeds[0].thumbnail.url : null),
+				name: post.server.name ?? post.message.embeds[0].title,
+				description: post.server.description ?? post.message.embeds[0].description,
+				invite: post.server.invite ?? post.message.embeds[0].fields[1].value,
+				pic_url: post.server.pic_url ?? (post.message.embeds[0].thumbnail ? post.message.embeds[0].thumbnail.url : null),
 				color: post.server.color,
 				contact_id: post.server.contact_id,
-				visibility: post.server.visibility
+				visibility: post.server.visibility,
 			};
 
 			if(post.server.contact_id) {
@@ -430,6 +416,15 @@ class ServerPostStore extends Collection {
 				if(!data.contacts.pass[0]) return rej("Contacts invalid");
 				data.contacts = data.contacts.info.map(u => `${u.mention} (${u.username}#${u.discriminator})`).join("\n");
 			} else data.contacts = "(no contacts provided)";
+
+			var embed = this.bot.utils.serverEmbed({
+				guild: {
+					...data,
+					server_id: post.server.server_id,
+					guild: post.server.guild
+				},
+				contacts: data.contacts
+			});
 
 			var done = false;
 			var loops = 3;
@@ -451,22 +446,7 @@ class ServerPostStore extends Collection {
 						" all desired edits will be sent as a request to the mods, and they can be denied\n",
 						"Also note that you may only edit up to three values at once"
 					].join(""),
-					embed: {
-						title: data.name || "(unnamed)",
-						description: data.description || "(no description provided)",
-						fields: [
-							{name: "Contact", value: data.contacts},
-							{name: "Link", value: data.invite},
-							{name: "Members", value: post.server.guild ? post.server.guild.memberCount : "(unavailable)"}
-						],
-						thumbnail: {
-							url: data.pic_url || ""
-						},
-						color: parseInt(data.color || '3498DB', 16),
-						footer: {
-							text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
-						}
-					}
+					embed
 				});
 
 				try {
@@ -531,22 +511,15 @@ class ServerPostStore extends Collection {
 				};
 			}
 
-			await channel.createMessage({content: "Is this okay? (y/n)", embed: {
-				title: data.name || "(unnamed)",
-				description: data.description || "(no description provided)",
-				fields: [
-					{name: "Contact", value: data.contacts},
-					{name: "Link", value: data.invite},
-					{name: "Members", value: post.server.guild ? post.server.guild.memberCount : "(unavailable)"}
-				],
-				thumbnail: {
-					url: data.pic_url || ""
+			embed = this.bot.utils.serverEmbed({
+				guild: {
+					...data,
+					server_id: post.server.server_id,
+					guild: post.server.guild
 				},
-				color: parseInt(data.color || '3498DB', 16),
-				footer: {
-					text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
-				}
-			}});
+				contacts: data.contacts
+			});
+			await channel.createMessage({content: "Is this okay? (y/n)", embed});
 
 			response = (await channel.awaitMessages(m => m.author.id == user.id, {time:1000*60*3, maxMatches: 1, }))[0].content.toLowerCase();
 			if(!["y", "yes"].includes(response)) return await channel.createMessage("Action cancelled");
@@ -554,25 +527,12 @@ class ServerPostStore extends Collection {
 			try {
 				var echannel = message.guild.channels.find(c => c.id == config.edit_channel);
 				var msg = await echannel.createMessage({content: "New edit request!", embed: {
-					title: data.name || "(unnamed)",
-					description: data.description || "(no description provided)",
-					fields: [
-						{name: "Contact", value: data.contacts},
-						{name: "Link", value: data.invite},
-						{name: "Members", value: post.server.guild ? post.server.guild.memberCount : "(unavailable)"}
-					],
-					thumbnail: {
-						url: data.pic_url || ""
-					},
-					color: parseInt(data.color || '3498DB', 16),
-					footer: {
-						text: `ID: ${post.server.server_id} | This server ${data.visibility ? "is" : "is not"} visible on the website`
-					},
+					...embed,
 					author: {
 						name: `Requested by: ${member.username}#${member.discriminator}`,
 						icon_url: member.avatarURL
 					},
-					timestamp: new Date().toISOString()
+					timestamp: new Date()
 				}});
 				["✅", "❌"].forEach(r => msg.addReaction(r));
 				delete data.contacts;
