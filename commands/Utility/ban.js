@@ -177,7 +177,7 @@ module.exports = {
 			if(!scfg.ban_notifs) return;
 			try {
 				var chanid;
-				if(scfg.server_id == process.env.HUB_ID) {
+				if(scfg.sync_id == process.env.HUB_ID) {
 					await bot.createMessage(process.env.HUB_BAN_CHANNEL, {embed: {
 						title: "Ban Notification",
 						description: [`These users were banned from synced server ${msg.guild.name} (${msg.guild.id}).\n`,
