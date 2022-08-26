@@ -69,12 +69,13 @@ class ServerHandler {
 		if(!m) return "No data given!";
 
 		var sub = await this.stores.submissions.create({
+			host: ctx.guild.id,
+			server_id: guild.id,
+			user_id: ctx.user.id,
 			name: guild.name,
 			description: m.fields.getField('description').value.trim(),
 			link,
-			user_id: ctx.user.id,
-			host: ctx.guild.id,
-			server_id: guild.id
+			icon_url: guild.iconURL({dynamic: true})
 		})
 
 		if(categories?.length) {

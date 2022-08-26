@@ -3,15 +3,7 @@ const { Models: { DataStore, DataObject } } = require('frame');
 const KEYS = {
 	id: { },
 	server_id: { },
-	response_channel: { patch: true },
-	message: { patch: true },
-	prefix: { patch: true },
-	reacts: { patch: true },
-	embed: { patch: true },
-	opped: { patch: true },
-	ticket_category: { patch: true },
-	ticket_message: { patch: true },
-	autodm: { patch: true },
+	submission_channel: { patch: true },
 	autothread: { patch: true }
 }
 
@@ -30,15 +22,7 @@ class ConfigStore extends DataStore {
 		await this.db.query(`CREATE TABLE IF NOT EXISTS configs (
 			id 					SERIAL PRIMARY KEY,
 			server_id 			TEXT,
-			response_channel 	TEXT,
-			message 			TEXT,
-			prefix 				TEXT,
-			reacts 				BOOLEAN,
-			embed 				BOOLEAN,
-			opped 				JSONB,
-			ticket_category 	TEXT,
-			ticket_message		TEXT,
-			autodm 				TEXT,
+			submission_channel 	TEXT,
 			autothread			BOOLEAN
 		)`)
 	}
@@ -47,22 +31,12 @@ class ConfigStore extends DataStore {
 		try {
 			var c = await this.db.query(`INSERT INTO configs (
 				server_id,
-				response_channel,
-				message,
-				prefix,
-				reacts,
-				embed,
-				opped,
-				ticket_category,
-				ticket_message,
-				autodm,
+				submission_channel,
 				autothread
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+			) VALUES ($1,$2,$3)
 			RETURNING id`,
-			[data.server_id, data.response_channel,
-			 data.message, data.prefix, data.reacts ?? true,
-			 data.embed ?? true, data.opped ?? {roles: [], users: []}, data.ticket_category,
-			 data.ticket_message, data.autodm, data.autothread]);
+			[data.server_id, data.submission_channel,
+			 data.autothread]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -71,25 +45,15 @@ class ConfigStore extends DataStore {
 		return await this.getID(c.rows[0].id);
 	}
 
-	async index(server, data = {}) {
+	async index(data = {}) {
 		try {
-			await this.db.query(`INSERT INTO configs (
+			var c = await this.db.query(`INSERT INTO configs (
 				server_id,
-				response_channel,
-				message,
-				prefix,
-				reacts,
-				embed,
-				opped,
-				ticket_category,
-				ticket_message,
-				autodm,
+				submission_channel,
 				autothread
-			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-			[server, data.response_channel,
-			 data.message, data.prefix, data.reacts ?? true,
-			 data.embed ?? true, data.opped ?? {roles: [], users: []}, data.ticket_category,
-			 data.ticket_message, data.autodm, data.autothread]);
+			) VALUES ($1,$2,$3)`,
+			[data.server_id, data.submission_channel,
+			 data.autothread]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
