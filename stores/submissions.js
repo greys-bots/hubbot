@@ -23,7 +23,7 @@ class Submission extends DataObject {
 	async getTags() {
 		if(!this.tags?.length) return;
 		var tags = await this.store.bot.stores.tags.getByHids(
-			this.server_id,
+			this.host,
 			this.tags
 		)
 
@@ -34,7 +34,7 @@ class Submission extends DataObject {
 	async getCategory() {
 		if(!this.category) return;
 		var cat = await this.store.bot.stores.categories.get(
-			this.server_id,
+			this.host,
 			this.category
 		)
 

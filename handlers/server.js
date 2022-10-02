@@ -48,6 +48,12 @@ class ServerHandler {
 	constructor(bot) {
 		this.bot = bot;
 		this.stores = bot.stores;
+
+		this.bot.on('interactionCreate', (intr) => {
+			if(intr.type !== IT.MessageComponent) return;
+			if(intr.componentType !== CT.Button) return;
+			this.handleButtons(intr);
+		})
 	}
 
 	async submission(ctx) {
@@ -55,8 +61,10 @@ class ServerHandler {
 		if(!cfg?.submission_channel)
 			return "No submission channel set. Please ask the mods to set one.";
 
-		var categories/* = await this.stores.categories.getAll(ctx.guild.id)*/;
-		var tags/* = await this.stores.tags.getAll(ctx.guild.id)*/;
+		var categories = await this.stores.categories.getAll(ctx.guild.id);
+		if(!categories?.length) return "Categories must be set up before submissions can be accepted.";
+
+		var tags = await this.stores.tags.getAll(ctx.guild.id);
 		
 		var m = await this.bot.utils.awaitModal(
 			ctx,
@@ -72,7 +80,7 @@ class ServerHandler {
 		try {
 			inv = await this.bot.fetchInvite(link);
 			guild = inv.guild;
-		} catch() { }
+		} catch(e) { }
 
 		if(!guild) {
 			await m.followUp("Please provide a valid invite.")
@@ -89,26 +97,25 @@ class ServerHandler {
 			icon_url: guild.iconURL({dynamic: true})
 		})
 
-		if(categories?.length) {
-			var cts = await this.bot.utils.awaitSelection(
-				ctx,
-				categories.map(c => ({
-					label: c.name,
-					description: c.description,
-					value: c.hid
-				})),
-				"Which category best fits your server?",
-				{
-					min_values: 1, max_values: 1,
-					placeholder: "Select a category"
-				}
-			)
+		var cts = await this.bot.utils.awaitSelection(
+			ctx,
+			categories.map(c => ({
+				label: c.name,
+				description: c.description,
+				value: c.hid
+			})),
+			"Which category best fits your server?",
+			{
+				min_values: 1, max_values: 1,
+				placeholder: "Select a category"
+			}
+		)
 
-			if(typeof cts == 'string') return cts;
-			sub.category = cts[0];
-			await sub.save();
-			await sub.getCategory();
-		}
+		if(cts.err) return cts.err;
+		sub.category = cts.values[0];
+		await sub.save();
+		await sub.getCategory();
+		await cts.message.delete();
 
 		if(tags?.length) {
 			var tgs = await this.bot.utils.awaitSelection(
@@ -125,17 +132,18 @@ class ServerHandler {
 				}
 			)
 
-			if(typeof tgs == 'string') return tgs;
-			sub.tags = tgs;
+			if(tgs.err) return tgs;
+			sub.tags = tgs.values;
 			await sub.save();
 			await sub.getTags();
+			await tgs.message.delete();
 		}
 
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
 		var msg = await channel.send({
 			...this.genPost(sub, ctx.user),
-			components: BTNS.SUB
+			components: BTNS.SUB(false)
 		});
 		var post = await this.stores.submissionPosts.create({
 			server_id: ctx.guild.id,
@@ -144,13 +152,16 @@ class ServerHandler {
 			submission: sub.hid
 		})
 
-		await m.followUp("Submission received. Please wait while a moderator reviews it.")
+		await m.followUp({
+			content: "Submission received. Please wait while a moderator reviews it.",
+			ephemeral: true
+		})
 
 		return;
 	}
 
 	genPost(sub, user) {
-		return {embeds: [{
+		var res = {embeds: [{
 			title: sub.name,
 			description: sub.description,
 			fields: [
@@ -162,7 +173,7 @@ class ServerHandler {
 					name: "Category",
 					value: (
 						sub.resolved.category ?
-						sub.resolved.category :
+						sub.resolved.category.name :
 						"(not set)"
 					)
 					
@@ -171,19 +182,121 @@ class ServerHandler {
 					name: "Tags",
 					value: (
 						sub.resolved.tags?.length ?
-						sub.resolved.tags.join(", ") :
+						sub.resolved.tags.map(t => t.name).join(", ") :
 						"(not set)"
 					)
 				}
 			],
-			author: {
-				name: user.tag,
-				icon_url: user.avatarURL()
-			},
 			footer: {
 				text: `Server ID: ${sub.hid}`
+			},
+			thumbnail: {
+				url: sub.icon_url
 			}
 		}]}
+
+		if(user) {
+			res.embeds[0].author = {
+				name: user.tag,
+				icon_url: user.avatarURL()
+			}
+		}
+
+		return res;
+	}
+
+	async handleButtons(ctx) {
+		var post = await this.stores.submissionPosts.get(ctx.guild.id, ctx.message.id);
+		if(!post?.id) return;
+		await ctx.deferUpdate();
+		var msg = ctx.message;
+
+		var submission = await this.stores.submissions.get(ctx.guild.id, post.submission);
+		if(!submission?.id) return await ctx.update({content: 'Submission deleted, post no longer needed.', embeds: [], components: []});
+		await submission.getCategory();
+		await submission.getTags();
+
+		var embed = msg.embeds[0].toJSON()
+		switch(ctx.customId) {
+			case 'accept':
+				try {
+					var channel = await ctx.guild.channels.fetch(submission.resolved.category.channel);
+				} catch(e) { }
+				if(!channel) return ctx.followUp("Category channel wasn't found. Please update the category this submission belongs to.");
+
+				embed.color = 0x55aa55;
+				embed.footer.text += ' | Submission accepted.';
+
+				var m = await channel.send(this.genPost(submission))
+				await msg.edit({embeds: [embed], components: []});
+				await this.stores.posts.create({
+					server_id: ctx.guild.id,
+					channel_id: channel.id,
+					message_id: m.id,
+					submission: submission.hid
+				})
+				await post.delete();
+				break;
+			case 'deny':
+				try {
+					var u2 = await this.bot.users.fetch(submission.user_id);
+				} catch(e) { }
+
+				var reason;
+				var m = await msg.channel.send({
+					embeds: [{
+						title: 'Would you like to give a denial reason?'
+					}],
+					components: BTNS.DENY(false)
+				});
+
+				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60 * 1000, false);
+				if(!resp.choice) return await ctx.followUp({content: 'Nothing selected.', ephemeral: true});
+				switch(resp.choice) {
+					case 'cancel':
+						await m.delete()
+						return resp.interaction.reply({content: 'Action cancelled.', ephemeral: true});
+					case 'reason':
+						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.DENY(reason), ctx.user, true, 5 * 60_000);
+						if(mod) reason = mod.fields.getTextInputValue('reason')?.trim();
+						await mod.followUp("Modal received.")
+						break;
+					case 'skip':
+						break;
+				}
+
+				await m.delete()
+
+				embed.color = 0xaa5555;
+				embed.footer.text += ' | Submission denied.';
+				embed.description += `\n\n**Denial reason:** ${reason ?? "*(no reason given)*"}`;
+
+				try {
+					await msg.edit({
+						embeds: [embed],
+						components: []
+					});
+
+					await u2.send({embeds: [{
+						title: 'Submission denied.',
+						description: [
+							`Server: ${ctx.guild.name} (${ctx.guild.id})`,
+							`Submission: ${submission.name}`
+						].join("\n"),
+						fields: [{name: 'Reason', value: reason ?? "*(no reason given)*"}],
+						color: parseInt('aa5555', 16),
+						timestamp: new Date().toISOString()
+					}]})
+
+					await post.delete();
+				} catch(e) {
+					console.log(e);
+					return await msg.channel.send('Error: Submission denied, but I couldn\'t message the user.');
+				}
+
+				return await ctx.followUp({content: 'Submission denied.', ephemeral: true});
+				break;
+		}
 	}
 }
 

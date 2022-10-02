@@ -1,5 +1,5 @@
 const { Models: { SlashCommand } } = require('frame');
-const { ApplicationCommandOptionType: ACOT } = require('discord.js');
+const { ApplicationCommandOptionType: ACOT, ChannelType: CT } = require('discord.js');
 
 class Command extends SlashCommand {
 	#bot;
@@ -33,8 +33,8 @@ class Command extends SlashCommand {
 	}
 
 	async execute(ctx) {
-		var name = ctx.options.getString('name').value.trim();
-		var description = ctx.options.getString('description').value.trim();
+		var name = ctx.options.getString('name').trim();
+		var description = ctx.options.getString('description').trim();
 
 		var exists = await this.#stores.tags.checkExisting(ctx.guild.id, name.toLowerCase());
 		if(exists) return "A tag with that name already exists.";

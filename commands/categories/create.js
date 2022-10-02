@@ -1,5 +1,5 @@
 const { Models: { SlashCommand } } = require('frame');
-const { ApplicationCommandOptionType: ACOT } = require('discord.js');
+const { ApplicationCommandOptionType: ACOT, ChannelType: CT } = require('discord.js');
 
 class Command extends SlashCommand {
 	#bot;
@@ -46,16 +46,16 @@ class Command extends SlashCommand {
 	}
 
 	async execute(ctx) {
-		var name = ctx.options.getString('name').value.trim();
-		var description = ctx.options.getString('description').value.trim();
+		var name = ctx.options.getString('name').trim();
+		var description = ctx.options.getString('description').trim();
 		var channel = ctx.options.getChannel('channel').id;
 
 		var exists = await this.#stores.categories.checkExisting(ctx.guild.id, name.toLowerCase());
 		if(exists) return "A category with that name already exists.";
 		exists = await this.#stores.categories.getByChannel(ctx.guild.id, channel);
-		if(exists) return "A category with that channel already exists.";
+		if(exists?.id) return "A category with that channel already exists.";
 
-		await this.#stores.tags.create({
+		await this.#stores.categories.create({
 			server_id: ctx.guild.id,
 			name,
 			description,

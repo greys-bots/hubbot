@@ -18,16 +18,37 @@ module.exports = {
 					custom_id: 'deny',
 					emoji: '❌',
 					disabled
+				}
+			]
+		}]),
+		DENY: (disabled) => ([{
+			type: 1,
+			components: [
+				{
+					type: 2,
+					label: 'Add reason',
+					custom_id: 'reason',
+					style: 1,
+					emoji: '📝',
+					disabled
 				},
 				{
 					type: 2,
+					label: 'Skip reason',
+					custom_id: 'skip',
 					style: 2,
-					label: 'Ticket',
-					custom_id: 'ticket',
-					emoji: '🎟️',
+					emoji: '➡️',
 					disabled
-				}
+				},
+				{
+					type: 2,
+					label: 'Cancel',
+					custom_id: 'cancel',
+					style: 4,
+					emoji: '❌',
+					disabled
+				},
 			]
 		}])
-	}
+	},
 }

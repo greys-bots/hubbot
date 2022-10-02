@@ -13,6 +13,18 @@ class Category extends DataObject {
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
+
+	async getStats() {
+		var res = await this.store.db.query(`
+			select count(*) as count
+			from submissions where
+			host = $1 and
+			category = $2
+		`, [this.server_id, this.hid]);
+
+		console.log(res.rows);
+		return res.rows[0];
+	}
 }
 
 class CategoryStore extends DataStore {
@@ -53,15 +65,16 @@ class CategoryStore extends DataStore {
 
 	async index(data = {}) {
 		try {
-			var c = await this.db.query(`INSERT INTO categories (
+			await this.db.query(`INSERT INTO categories (
 				server_id,
 				hid,
 				name,
-				description
-			) VALUES ($1,find_unique('categories'),$2,$3)
+				description,
+				channel
+			) VALUES ($1,find_unique('categories'),$2,$3,$4)
 			RETURNING id`,
 			[data.server_id, data.name,
-			 data.description]);
+			 data.description, data.channel]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -81,6 +94,32 @@ class CategoryStore extends DataStore {
 		if(data.rows?.[0]) {
 			return new Category(this, KEYS, data.rows[0]);
 		} else return new Category(this, KEYS, {server_id: server});
+	}
+
+	async getByChannel(server, channel) {
+		try {
+			var data = await this.db.query(`SELECT * FROM categories WHERE server_id = $1 AND channel = $2`,[server, channel]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		if(data.rows?.[0]) {
+			return new Category(this, KEYS, data.rows[0]);
+		} else return new Category(this, KEYS, {server_id: server});
+	}
+
+	async checkExisting(server, name) {
+		try {
+			var data = await this.db.query(`SELECT * FROM categories WHERE server_id = $1 AND lower(name) = $2`,[server, name]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		if(data.rows?.[0]) {
+			return new Category(this, KEYS, data.rows[0]);
+		} else return undefined;
 	}
 
 	async getAll(server) {

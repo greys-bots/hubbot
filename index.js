@@ -59,6 +59,7 @@ async function setup() {
 	}
 
 	bot.utils = Utilities;
+	bot.utils = Object.assign(bot.utils, require('./utils'));
 }
 
 bot.on("ready", async ()=> {

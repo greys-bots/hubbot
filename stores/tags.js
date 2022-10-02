@@ -12,6 +12,18 @@ class Tag extends DataObject {
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
+
+	async getStats() {
+		var res = await this.store.db.query(`
+			select count(*) as count
+			from submissions where
+			host = $1 and
+			$2 in tags
+		`, [this.server_id, this.hid]);
+
+		console.log(res.rows);
+		return res.rows[0];
+	}
 }
 
 class TagStore extends DataStore {
@@ -90,7 +102,7 @@ class TagStore extends DataStore {
 		
 		if(data.rows?.[0]) {
 			return new Tag(this, KEYS, data.rows[0]);
-		} else return new Tag(this, KEYS, {server_id: server});
+		} else return undefined;
 	}
 
 	async getAll(server) {
@@ -108,7 +120,7 @@ class TagStore extends DataStore {
 
 	async getByHids(server, hids) {
 		try {
-			var data = await this.db.query(`SELECT * FROM tags WHERE server_id = $1 AND hid IN $2`,[server, hids]);
+			var data = await this.db.query(`SELECT * FROM tags WHERE server_id = $1 AND hid = ANY($2)`,[server, hids]);
 		} catch(e) {
 			console.log(e);
 			return Promise.reject(e.message);
