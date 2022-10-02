@@ -4,6 +4,8 @@ const {
 	InteractionType: IT
 } = require('discord.js');
 
+const { buttons: BTNS } = require('../extras')
+
 const MODALS = {
 	serverInfo(ctx) {
 		return {
@@ -65,9 +67,17 @@ class ServerHandler {
 		)
 		if(!m) return "No data given!";
 
-		var link = m.fields.getField('link').value.trim()
-		var inv = await this.bot.fetchInvite(link);
-		var guild = inv.guild;
+		var link = m.fields.getField('link').value.trim();
+		var inv, guild;
+		try {
+			inv = await this.bot.fetchInvite(link);
+			guild = inv.guild;
+		} catch() { }
+
+		if(!guild) {
+			await m.followUp("Please provide a valid invite.")
+			return;
+		}
 
 		var sub = await this.stores.submissions.create({
 			host: ctx.guild.id,
@@ -97,10 +107,11 @@ class ServerHandler {
 			if(typeof cts == 'string') return cts;
 			sub.category = cts[0];
 			await sub.save();
+			await sub.getCategory();
 		}
 
 		if(tags?.length) {
-			var tags = await this.bot.utils.awaitSelection(
+			var tgs = await this.bot.utils.awaitSelection(
 				ctx,
 				tags.map(t => ({
 					label: t.name,
@@ -109,19 +120,23 @@ class ServerHandler {
 				})),
 				"Which tags best fit your server?",
 				{
-					min_values: 1, max_values: 1,
+					min_values: 1, max_values: tags.length,
 					placeholder: "Select tags"
 				}
 			)
 
-			if(typeof tags == 'string') return tags;
-			sub.tags = tags[0];
+			if(typeof tgs == 'string') return tgs;
+			sub.tags = tgs;
 			await sub.save();
+			await sub.getTags();
 		}
 
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
-		var msg = await channel.send(this.genPost(sub, ctx.user));
+		var msg = await channel.send({
+			...this.genPost(sub, ctx.user),
+			components: BTNS.SUB
+		});
 		var post = await this.stores.submissionPosts.create({
 			server_id: ctx.guild.id,
 			channel_id: channel.id,
@@ -146,8 +161,8 @@ class ServerHandler {
 				{
 					name: "Category",
 					value: (
-						sub.category ?
-						sub.category :
+						sub.resolved.category ?
+						sub.resolved.category :
 						"(not set)"
 					)
 					
@@ -155,8 +170,8 @@ class ServerHandler {
 				{
 					name: "Tags",
 					value: (
-						sub.tags?.length ?
-						sub.tags.join(", ") :
+						sub.resolved.tags?.length ?
+						sub.resolved.tags.join(", ") :
 						"(not set)"
 					)
 				}

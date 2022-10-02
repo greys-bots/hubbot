@@ -17,6 +17,29 @@ const KEYS = {
 class Submission extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
+		this.resolved = {};
+	}
+
+	async getTags() {
+		if(!this.tags?.length) return;
+		var tags = await this.store.bot.stores.tags.getByHids(
+			this.server_id,
+			this.tags
+		)
+
+		this.resolved.tags = tags;
+		return tags;
+	}
+
+	async getCategory() {
+		if(!this.category) return;
+		var cat = await this.store.bot.stores.categories.get(
+			this.server_id,
+			this.category
+		)
+
+		this.resolved.category = cat;
+		return cat;
 	}
 }
 
