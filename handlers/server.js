@@ -53,11 +53,8 @@ class ServerHandler {
 		if(!cfg?.submission_channel)
 			return "No submission channel set. Please ask the mods to set one.";
 
-		var link = m.fields.getField('link').value.trim()
-		var guild = await this.bot.fetchInvite(link);
-
-		var categories = await this.stores.categories.getAll(ctx.guild.id);
-		var tags = await this.stores.tags.getAll(ctx.guild.id);
+		var categories/* = await this.stores.categories.getAll(ctx.guild.id)*/;
+		var tags/* = await this.stores.tags.getAll(ctx.guild.id)*/;
 		
 		var m = await this.bot.utils.awaitModal(
 			ctx,
@@ -68,13 +65,17 @@ class ServerHandler {
 		)
 		if(!m) return "No data given!";
 
+		var link = m.fields.getField('link').value.trim()
+		var inv = await this.bot.fetchInvite(link);
+		var guild = inv.guild;
+
 		var sub = await this.stores.submissions.create({
 			host: ctx.guild.id,
 			server_id: guild.id,
 			user_id: ctx.user.id,
 			name: guild.name,
 			description: m.fields.getField('description').value.trim(),
-			link,
+			link: `https://discord.gg/${inv.code}`,
 			icon_url: guild.iconURL({dynamic: true})
 		})
 
@@ -118,17 +119,19 @@ class ServerHandler {
 			await sub.save();
 		}
 
-		var channel = await ctx.guild.channels.fetch(cfg.submissions_channel);
+		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
-		var msg = await channel.send(this.genPost(sub));
-		var post = await this.stores.subPosts.create({
+		var msg = await channel.send(this.genPost(sub, ctx.user));
+		var post = await this.stores.submissionPosts.create({
 			server_id: ctx.guild.id,
 			channel_id: channel.id,
 			message_id: msg.id,
 			submission: sub.hid
 		})
 
-		return "Submission received. Please wait while a moderator reviews it.";
+		await m.followUp("Submission received. Please wait while a moderator reviews it.")
+
+		return;
 	}
 
 	genPost(sub, user) {
@@ -136,6 +139,10 @@ class ServerHandler {
 			title: sub.name,
 			description: sub.description,
 			fields: [
+				{
+					name: 'Link',
+					value: sub.link
+				},
 				{
 					name: "Category",
 					value: (
