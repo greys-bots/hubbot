@@ -163,7 +163,8 @@ class ServerHandler {
 			...this.genPost(sub, {
 				user: ctx.user,
 				category: sub.resolved.category,
-				tags: sub.resolved.tags
+				tags: sub.resolved.tags,
+				timestamp: new Date()
 			}),
 			components: BTNS.SUB(false)
 		});
@@ -219,6 +220,10 @@ class ServerHandler {
 				name: extras.user.tag,
 				icon_url: extras.user.avatarURL()
 			}
+		}
+
+		if(extras.timestamp) {
+			res.embeds[0].timestamp = extras.timestamp;
 		}
 
 		return res;
@@ -305,7 +310,7 @@ class ServerHandler {
 							`Submission: ${submission.name}`
 						].join("\n"),
 						fields: [{name: 'Reason', value: reason ?? "*(no reason given)*"}],
-						color: parseInt('aa5555', 16),
+						color: 0xaa5555,
 						timestamp: new Date().toISOString()
 					}]})
 
