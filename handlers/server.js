@@ -39,7 +39,25 @@ const MODALS = {
 				
 			]
 		}
-	}
+	},
+	DENY: (value) => ({
+		title: "Deny reason",
+		custom_id: 'deny_reason',
+		components: [{
+			type: 1,
+			components: [{
+				type: 4,
+				custom_id: 'reason',
+				style: 2,
+				label: "Enter the reason below",
+				min_length: 1,
+				max_length: 1024,
+				required: true,
+				placeholder: "Big meanie :(",
+				value
+			}]
+		}]
+	})
 }
 
 class ServerHandler {
@@ -142,7 +160,11 @@ class ServerHandler {
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
 		var msg = await channel.send({
-			...this.genPost(sub, ctx.user),
+			...this.genPost(sub, {
+				user: ctx.user,
+				category: sub.resolved.category,
+				tags: sub.resolved.tags
+			}),
 			components: BTNS.SUB(false)
 		});
 		var post = await this.stores.submissionPosts.create({
@@ -160,7 +182,7 @@ class ServerHandler {
 		return;
 	}
 
-	genPost(sub, user) {
+	genPost(sub, extras = {}) {
 		var res = {embeds: [{
 			title: sub.name,
 			description: sub.description,
@@ -168,23 +190,6 @@ class ServerHandler {
 				{
 					name: 'Link',
 					value: sub.link
-				},
-				{
-					name: "Category",
-					value: (
-						sub.resolved.category ?
-						sub.resolved.category.name :
-						"(not set)"
-					)
-					
-				},
-				{
-					name: "Tags",
-					value: (
-						sub.resolved.tags?.length ?
-						sub.resolved.tags.map(t => t.name).join(", ") :
-						"(not set)"
-					)
 				}
 			],
 			footer: {
@@ -195,10 +200,24 @@ class ServerHandler {
 			}
 		}]}
 
-		if(user) {
+		if(extras.category?.name) {
+			res.embeds[0].fields.push({
+				name: "Category",
+				value: extras.category.name
+			})
+		}
+
+		if(extras.tags?.length) {
+			res.embeds[0].fields.push({
+				name: "Tags",
+				value: extras.tags.map(t => t.name).join(", ")
+			})
+		}
+
+		if(extras.user) {
 			res.embeds[0].author = {
-				name: user.tag,
-				icon_url: user.avatarURL()
+				name: extras.user.tag,
+				icon_url: extras.user.avatarURL()
 			}
 		}
 
@@ -227,7 +246,9 @@ class ServerHandler {
 				embed.color = 0x55aa55;
 				embed.footer.text += ' | Submission accepted.';
 
-				var m = await channel.send(this.genPost(submission))
+				var m = await channel.send(this.genPost(submission, {
+					tags: submission.resolved.tags
+				}))
 				await msg.edit({embeds: [embed], components: []});
 				await this.stores.posts.create({
 					server_id: ctx.guild.id,

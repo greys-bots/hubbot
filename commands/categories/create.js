@@ -8,17 +8,17 @@ class Command extends SlashCommand {
 	constructor(bot, stores) {
 		super({
 			name: "create",
-			description: "Create a new tag",
+			description: "Create a new category",
 			options: [
 				{
 					name: 'name',
-					description: "The name of the tag",
+					description: "The name of the category",
 					type: ACOT.String,
 					required: true
 				},
 				{
 					name: 'description',
-					description: "The description of the tag",
+					description: "The description of the category",
 					type: ACOT.String,
 					required: true
 				},
@@ -37,7 +37,7 @@ class Command extends SlashCommand {
 				}
 			],
 			usage: [
-				"[name] [description] [channel] - Creates a new tag"
+				"[name] [description] [channel] - Creates a new category"
 			],
 			guildOnly: true
 		})
