@@ -40,7 +40,7 @@ const MODALS = {
 			]
 		}
 	},
-	DENY: (value) => ({
+	deny: (value) => ({
 		title: "Deny reason",
 		custom_id: 'deny_reason',
 		components: [{
@@ -92,7 +92,7 @@ class ServerHandler {
 			false,
 			5 * 60_000
 		)
-		if(!m) return "No data given!";
+		if(!m) return "No data given.";
 
 		var link = m.fields.getField('link').value.trim();
 		var inv, guild;
@@ -102,9 +102,11 @@ class ServerHandler {
 		} catch(e) { }
 
 		if(!guild) {
-			await m.followUp("Please provide a valid invite.")
-			return;
+			return "Please provide a valid invite.";
 		}
+
+		var md = await m.fetchReply();
+		await md.delete();
 
 		var sub = await this.stores.submissions.create({
 			host: ctx.guild.id,
@@ -176,12 +178,10 @@ class ServerHandler {
 			submission: sub.hid
 		})
 
-		await m.followUp({
+		return {
 			content: "Submission received. Please wait while a moderator reviews it.",
 			ephemeral: true
-		})
-
-		return;
+		};
 	}
 
 	genPost(sub, extras = {}) {
@@ -284,9 +284,10 @@ class ServerHandler {
 						await m.delete()
 						return resp.interaction.reply({content: 'Action cancelled.', ephemeral: true});
 					case 'reason':
-						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.DENY(reason), ctx.user, true, 5 * 60_000);
+						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.deny(reason), ctx.user, false, 5 * 60_000);
 						if(mod) reason = mod.fields.getTextInputValue('reason')?.trim();
-						await mod.followUp("Modal received.")
+						var md = await mod.followUp("Modal received.");
+						await md.delete()
 						break;
 					case 'skip':
 						break;
