@@ -71,6 +71,7 @@ class ServerHandler {
 			if(intr.type !== IT.MessageComponent) return;
 			if(intr.componentType !== CT.Button) return;
 			this.handleButtons(intr);
+			this.handleEdit(intr);
 		})
 	}
 
@@ -323,6 +324,13 @@ class ServerHandler {
 				return await ctx.followUp({content: 'Submission denied.', ephemeral: true});
 				break;
 		}
+	}
+
+	async handleEdit(ctx) {
+		var post = await this.stores.posts.get(ctx.guild.id, ctx.message.id);
+		if(!post?.id) return;
+
+		
 	}
 }
 
