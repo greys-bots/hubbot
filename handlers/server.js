@@ -60,6 +60,85 @@ const MODALS = {
 	})
 }
 
+const POSTS = {
+	submission: (data) => ({
+		title: data.name,
+		description: data.description,
+		fields: [
+			{
+				name: 'Link',
+				value: data.link
+			},
+			{
+				name: "Category",
+				value: data.resolved?.category?.name ?? '(not set)'
+			},
+			{
+				name: "Tags",
+				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
+			}
+		],
+		footer: {
+			text: `Server ID: ${data.hid}`
+		},
+		thumbnail: {
+			url: data.icon_url
+		},
+		author: {
+			name: data.user.tag,
+			icon_url: data.user.avatarURL()
+		}
+	}),
+	post: (data) => ({
+		title: data.name,
+		description: data.description,
+		fields: [
+			{
+				name: 'Link',
+				value: data.link
+			},
+			{
+				name: "Tags",
+				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
+			},
+			{
+				name: data.user.tag,
+				icon_url: data.user.avatarURL()
+			}
+		],
+		footer: {
+			text: `Server ID: ${data.hid}`
+		},
+		thumbnail: {
+			url: data.icon_url
+		}
+	}),
+	preview: (data) => ({
+		title: data.name,
+		description: data.description,
+		fields: [
+			{
+				name: 'Link',
+				value: data.link
+			},
+			{
+				name: "Tags",
+				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
+			},
+			{
+				name: `Submitted by`,
+				value: `<@${data.user_id}>`
+			}
+		],
+		footer: {
+			text: `Server ID: ${data.hid}`
+		},
+		thumbnail: {
+			url: data.icon_url
+		}
+	})
+}
+
 class ServerHandler {
 	menus = new Map();
 
@@ -163,14 +242,14 @@ class ServerHandler {
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
 		var msg = await channel.send({
-			...this.genPost(sub, {
+			...this.genPost({
+				...sub,
 				user: ctx.user,
-				category: sub.resolved.category,
-				tags: sub.resolved.tags,
 				timestamp: new Date()
 			}),
 			components: BTNS.SUB(false)
 		});
+		
 		var post = await this.stores.submissionPosts.create({
 			server_id: ctx.guild.id,
 			channel_id: channel.id,
@@ -184,50 +263,8 @@ class ServerHandler {
 		};
 	}
 
-	genPost(sub, extras = {}) {
-		var res = {embeds: [{
-			title: sub.name,
-			description: sub.description,
-			fields: [
-				{
-					name: 'Link',
-					value: sub.link
-				}
-			],
-			footer: {
-				text: `Server ID: ${sub.hid}`
-			},
-			thumbnail: {
-				url: sub.icon_url
-			}
-		}]}
-
-		if(extras.category?.name) {
-			res.embeds[0].fields.push({
-				name: "Category",
-				value: extras.category.name
-			})
-		}
-
-		if(extras.tags?.length) {
-			res.embeds[0].fields.push({
-				name: "Tags",
-				value: extras.tags.map(t => t.name).join(", ")
-			})
-		}
-
-		if(extras.user) {
-			res.embeds[0].author = {
-				name: extras.user.tag,
-				icon_url: extras.user.avatarURL()
-			}
-		}
-
-		if(extras.timestamp) {
-			res.embeds[0].timestamp = extras.timestamp;
-		}
-
-		return res;
+	genPost(data, type) {
+		return {embeds: [POSTS[type](data)]};
 	}
 
 	async handleButtons(ctx) {
@@ -252,9 +289,7 @@ class ServerHandler {
 				embed.color = 0x55aa55;
 				embed.footer.text += ' | Submission accepted.';
 
-				var m = await channel.send(this.genPost(submission, {
-					tags: submission.resolved.tags
-				}))
+				var m = await channel.send(this.genPost(submission, 'post'))
 				await msg.edit({embeds: [embed], components: []});
 				await this.stores.posts.create({
 					server_id: ctx.guild.id,
