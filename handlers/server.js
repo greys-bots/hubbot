@@ -249,7 +249,7 @@ class ServerHandler {
 			}),
 			components: BTNS.SUB(false)
 		});
-		
+
 		var post = await this.stores.submissionPosts.create({
 			server_id: ctx.guild.id,
 			channel_id: channel.id,
@@ -365,7 +365,7 @@ class ServerHandler {
 	async handleEdit(ctx) {
 		var post = await this.stores.posts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
-
+		if(!ctx.member.permissions.has('ManageMessages'))
 		
 	}
 }
