@@ -149,8 +149,8 @@ class ServerHandler {
 		this.bot.on('interactionCreate', (intr) => {
 			if(intr.type !== IT.MessageComponent) return;
 			if(intr.componentType !== CT.Button) return;
+			if(intr.customId.startsWith('edit-')) return this.handleEdit(intr);
 			this.handleButtons(intr);
-			this.handleEdit(intr);
 		})
 	}
 
@@ -363,10 +363,18 @@ class ServerHandler {
 	}
 
 	async handleEdit(ctx) {
+		await ctx.deferReply({ ephemeral: true });
 		var post = await this.stores.posts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
+		var sub = await this.stores.submissions.get(ctx.guild.id, post.submission);
 		if(!ctx.member.permissions.has('ManageMessages'))
-		
+			if(ctx.user.id !== sub.user_id);
+				return await ctx.followUp({
+					content: "You don't have permission to edit that post.",
+					ephemeral: true
+				});
+
+		var m = await ctx.reply()
 	}
 }
 
