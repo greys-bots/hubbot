@@ -36,7 +36,53 @@ const MODALS = {
 						required: true
 					}]
 				},
-				
+			]
+		}
+	},
+	edit(ctx, srv) {
+		return {
+			title: "Edit a server",
+			custom_id: `${ctx.guild.id}-${ctx.user.id}`,
+			components: [
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
+						custom_id: 'name',
+						label: 'Server name',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						value: srv.name,
+						required: true
+					}]
+				},
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
+						custom_id: 'link',
+						label: 'Server link',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						value: srv.link,
+						required: true
+					}]
+				},
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
+						custom_id: 'description',
+						label: 'Server Description',
+						style: TIS.Paragraph,
+						min_length: 1,
+						max_length: 2000,
+						value: srv.description,
+						required: true
+					}]
+				},
 			]
 		}
 	},
@@ -139,6 +185,44 @@ const POSTS = {
 	})
 }
 
+const BUTTONS = {
+	edit(id) {
+		return [{
+			type: 1,
+			components: [
+				{
+					type: 2,
+					style: 1,
+					custom_id: `edit-${id}`,
+					label: "Edit listing",
+					emoji: '📝'
+				}
+			]
+		}]
+	},
+	editPost(id) {
+		return [{
+			type: 1,
+			components: [
+				{
+					type: 2,
+					style: 3,
+					custom_id: `ep-${id}-accept`,
+					label: "Accept edit",
+					emoji: '✅'
+				},
+				{
+					type: 2,
+					style: 4,
+					custom_id: `ep-${id}-deny`,
+					label: "Deny edit",
+					emoji: '❌'
+				}
+			]
+		}]
+	}
+}
+
 class ServerHandler {
 	menus = new Map();
 
@@ -150,6 +234,7 @@ class ServerHandler {
 			if(intr.type !== IT.MessageComponent) return;
 			if(intr.componentType !== CT.Button) return;
 			if(intr.customId.startsWith('edit-')) return this.handleEdit(intr);
+			if(intr.customId.startsWith('ep-')) return this.handleEditPost(intr);
 			this.handleButtons(intr);
 		})
 	}
@@ -267,7 +352,7 @@ class ServerHandler {
 		return {embeds: [POSTS[type](data)]};
 	}
 
-	async handleButtons(ctx) {
+	async handleSubmissionButtons(ctx) {
 		var post = await this.stores.submissionPosts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
 		await ctx.deferUpdate();
@@ -289,7 +374,10 @@ class ServerHandler {
 				embed.color = 0x55aa55;
 				embed.footer.text += ' | Submission accepted.';
 
-				var m = await channel.send(this.genPost(submission, 'post'))
+				var m = await channel.send({
+					embeds: [this.genPost(submission, 'post')],
+					components: BUTTONS.edit(submission.hid)
+				})
 				await msg.edit({embeds: [embed], components: []});
 				await this.stores.posts.create({
 					server_id: ctx.guild.id,
@@ -366,6 +454,10 @@ class ServerHandler {
 		await ctx.deferReply({ ephemeral: true });
 		var post = await this.stores.posts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
+
+		var cfg = await this.stores.configs.get(ctx.guild.id);
+		if(!cfg.edits) return await ctx.followUp('No edit request channel set. Ask a mod to set one first.');
+
 		var sub = await this.stores.submissions.get(ctx.guild.id, post.submission);
 		if(!ctx.member.permissions.has('ManageMessages'))
 			if(ctx.user.id !== sub.user_id);
@@ -374,7 +466,59 @@ class ServerHandler {
 					ephemeral: true
 				});
 
-		var m = await ctx.reply()
+		var m = await this.bot.utils.awaitModal(
+			ctx,
+			MODALS.edit(ctx, sub),
+			ctx.user,
+			false,
+			5 * 60_000
+		)
+		if(!m) return await ctx.followUp("No data received.");
+
+		var ed = await this.stores.edits.create({
+			host: ctx.guild.id,
+			server: sub.hid,
+			user_id: ctx.user.id,
+			changes: {
+				name: m.fields.getField('name').trim(),
+				description: m.fields.getField('description').trim(),
+				link: m.fields.getField('link').trim()
+			}
+		})
+
+		var nm = ed.changes.name;
+		if(ed.changes.name != sub.name) nm += ` (previously ${sub.name})`;
+		try {
+			var chan = await ctx.guild.channels.fetch(cfg.edit_requests);
+			await chan.send({
+				embeds: [{
+					author: {
+						name: 'Edit request received'
+					},
+					title: nm,
+					description: ed.changes.description,
+					fields: [{
+						name: "Link",
+						value: ed.changes.link
+					}]
+				}],
+				components: BUTTONS.editPost(ed.hid)
+			})
+		} catch(e) {
+			console.error(e);
+			return await ctx.followUp("An error occurred. Please try again later.");
+		}
+
+		return await ctx.followUp("Your edit request has been received. Please wait while a mod reviews it.");
+	}
+
+	async handleEditPost(ctx) {
+		var split = ctx.customId.split('-');
+		var ed = await this.stores.edits.get(ctx.guild.id, split[1]);
+		var sub = await this.stores.submissions.get(ctx.guild.id, ed.server);
+		var action = split[2];
+
+		var msg;
 	}
 }
 

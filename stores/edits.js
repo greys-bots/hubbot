@@ -3,6 +3,7 @@ const { Models: { DataStore, DataObject } } = require('frame');
 const KEYS = {
 	id: { },
 	hid: { },
+	host: { },
 	server_id: { },
 	user_id: { },
 	changes: { patch: true }
@@ -23,6 +24,7 @@ class EditStore extends DataStore {
 		await this.db.query(`CREATE TABLE IF NOT EXISTS edits (
 			id 					SERIAL PRIMARY KEY,
 			hid		 			TEXT,
+			host 				TEXT,
 			server_id		 	TEXT,
 			user_id				TEXT,
 			changes 			JSONB
@@ -33,35 +35,19 @@ class EditStore extends DataStore {
 		try {
 			var c = await this.db.query(`INSERT INTO edits (
 				hid,
-				server_id,
+				host,
+				server,
 				user_id,
 				changes
-			) VALUES (find_unique('edits'), $1,$2,$3)
+			) VALUES (find_unique('edits'), $1,$2,$3,$4)
 			returning id`,
-			[data.server_id, data.user_id, data.changes]);
+			[data.host, data.server, data.user_id, data.changes]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
 		}
 		
 		return await this.getID(c.rows[0].id);
-	}
-
-	async index(data = {}) {
-		try {
-			await this.db.query(`INSERT INTO edits (
-				hid,
-				server_id,
-				user_id,
-				changes
-			) VALUES (find_unique('edits'), $1,$2,$3)`,
-			[data.server_id, data.user_id, data.changes]);
-		} catch(e) {
-			console.log(e);
-	 		return Promise.reject(e.message);
-		}
-		
-		return;
 	}
 
 	async get(server, hid) {
