@@ -4,6 +4,7 @@ const KEYS = {
 	id: { },
 	server_id: { },
 	submission_channel: { patch: true },
+	requests: { patch: true },
 	autothread: { patch: true }
 }
 
@@ -23,6 +24,7 @@ class ConfigStore extends DataStore {
 			id 					SERIAL PRIMARY KEY,
 			server_id 			TEXT,
 			submission_channel 	TEXT,
+			requests 			TEXT,
 			autothread			BOOLEAN
 		)`)
 	}
@@ -32,10 +34,11 @@ class ConfigStore extends DataStore {
 			var c = await this.db.query(`INSERT INTO configs (
 				server_id,
 				submission_channel,
+				requests,
 				autothread
-			) VALUES ($1,$2,$3)
+			) VALUES ($1,$2,$3,$4)
 			RETURNING id`,
-			[data.server_id, data.submission_channel,
+			[data.server_id, data.submission_channel, data.requests,
 			 data.autothread]);
 		} catch(e) {
 			console.log(e);
@@ -43,23 +46,6 @@ class ConfigStore extends DataStore {
 		}
 		
 		return await this.getID(c.rows[0].id);
-	}
-
-	async index(data = {}) {
-		try {
-			var c = await this.db.query(`INSERT INTO configs (
-				server_id,
-				submission_channel,
-				autothread
-			) VALUES ($1,$2,$3)`,
-			[data.server_id, data.submission_channel,
-			 data.autothread]);
-		} catch(e) {
-			console.log(e);
-	 		return Promise.reject(e.message);
-		}
-		
-		return;
 	}
 
 	async get(server) {

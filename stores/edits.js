@@ -36,12 +36,12 @@ class EditStore extends DataStore {
 			var c = await this.db.query(`INSERT INTO edits (
 				hid,
 				host,
-				server,
+				server_id,
 				user_id,
 				changes
 			) VALUES (find_unique('edits'), $1,$2,$3,$4)
 			returning id`,
-			[data.host, data.server, data.user_id, data.changes]);
+			[data.host, data.server_id, data.user_id, data.changes]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -60,7 +60,7 @@ class EditStore extends DataStore {
 		
 		if(data.rows?.[0]) {
 			return new EditRequest(this, KEYS, data.rows[0]);
-		} else return new EditRequest(this, KEYS, {server_id: server});
+		} else return new EditRequest(this, KEYS, {host: server});
 	}
 
 	async getID(id) {
@@ -78,12 +78,25 @@ class EditStore extends DataStore {
 
 	async getAll(server) {
 		try {
-			var data = await this.db.query(`SELECT * FROM edits WHERE server_id = $1`,[server]);
+			var data = await this.db.query(`SELECT * FROM edits WHERE host = $1`,[server]);
 		} catch(e) {
 			console.log(e);
 			return Promise.reject(e.message);
 		}
 
+		if(data.rows?.[0]) {
+			return data.rows.map(x => new EditRequest(this, KEYS, x));
+		} else return undefined;
+	}
+
+	async getBySubmission(server, hid) {
+		try {
+			var data = await this.db.query(`SELECT * FROM edits WHERE host = $1 and server_id = $2`,[server, hid]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
 		if(data.rows?.[0]) {
 			return data.rows.map(x => new EditRequest(this, KEYS, x));
 		} else return undefined;

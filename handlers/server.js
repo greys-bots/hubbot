@@ -16,18 +16,6 @@ const MODALS = {
 					type: CT.ActionRow,
 					components: [{
 						type: CT.TextInput,
-						custom_id: 'link',
-						label: 'Server link',
-						style: TIS.Short,
-						min_length: 1,
-						max_length: 100,
-						required: true
-					}]
-				},
-				{
-					type: CT.ActionRow,
-					components: [{
-						type: CT.TextInput,
 						custom_id: 'description',
 						label: 'Server Description',
 						style: TIS.Paragraph,
@@ -36,6 +24,18 @@ const MODALS = {
 						required: true
 					}]
 				},
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
+						custom_id: 'link',
+						label: 'Server link',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						required: true
+					}]
+				}
 			]
 		}
 	},
@@ -61,6 +61,19 @@ const MODALS = {
 					type: CT.ActionRow,
 					components: [{
 						type: CT.TextInput,
+						custom_id: 'description',
+						label: 'Server description',
+						style: TIS.Paragraph,
+						min_length: 1,
+						max_length: 2000,
+						value: srv.description,
+						required: true
+					}]
+				},
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
 						custom_id: 'link',
 						label: 'Server link',
 						style: TIS.Short,
@@ -74,12 +87,12 @@ const MODALS = {
 					type: CT.ActionRow,
 					components: [{
 						type: CT.TextInput,
-						custom_id: 'description',
-						label: 'Server Description',
-						style: TIS.Paragraph,
+						custom_id: 'icon_url',
+						label: 'Server icon',
+						style: TIS.Short,
 						min_length: 1,
 						max_length: 2000,
-						value: srv.description,
+						value: srv.icon_url,
 						required: true
 					}]
 				},
@@ -146,10 +159,6 @@ const POSTS = {
 			{
 				name: "Tags",
 				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
-			},
-			{
-				name: data.user.tag,
-				icon_url: data.user.avatarURL()
 			}
 		],
 		footer: {
@@ -186,20 +195,6 @@ const POSTS = {
 }
 
 const BUTTONS = {
-	edit(id) {
-		return [{
-			type: 1,
-			components: [
-				{
-					type: 2,
-					style: 1,
-					custom_id: `edit-${id}`,
-					label: "Edit listing",
-					emoji: '📝'
-				}
-			]
-		}]
-	},
 	editPost(id) {
 		return [{
 			type: 1,
@@ -348,6 +343,101 @@ class ServerHandler {
 		};
 	}
 
+	async addition(ctx) {
+		var categories = await this.stores.categories.getAll(ctx.guild.id);
+		if(!categories?.length) return "Categories must be set up before submissions can be added.";
+		var tags = await this.stores.tags.getAll(ctx.guild.id);
+
+		var m = await this.bot.utils.awaitModal(
+			ctx,
+			MODALS.serverInfo(ctx),
+			ctx.user,
+			false,
+			5 * 60_000
+		)
+		if(!m) return "No data given.";
+
+		var link = m.fields.getField('link').value.trim();
+		var inv, guild;
+		try {
+			inv = await this.bot.fetchInvite(link);
+			guild = inv.guild;
+		} catch(e) { }
+
+		if(!guild) {
+			return "Please provide a valid invite.";
+		}
+
+		var md = await m.fetchReply();
+		await md.delete();
+
+		var sub = await this.stores.submissions.create({
+			host: ctx.guild.id,
+			server_id: guild.id,
+			user_id: ctx.user.id,
+			name: guild.name,
+			description: m.fields.getField('description').value.trim(),
+			link: `https://discord.gg/${inv.code}`,
+			icon_url: guild.iconURL({dynamic: true})
+		})
+
+		var cts = await this.bot.utils.awaitSelection(
+			ctx,
+			categories.map(c => ({
+				label: c.name,
+				description: c.description,
+				value: c.hid
+			})),
+			"Which category best fits your server?",
+			{
+				min_values: 1, max_values: 1,
+				placeholder: "Select a category"
+			}
+		)
+
+		if(cts.err) return cts.err;
+		sub.category = cts.values[0];
+		await sub.save();
+		await sub.getCategory();
+		await cts.message.delete();
+
+		if(tags?.length) {
+			var tgs = await this.bot.utils.awaitSelection(
+				ctx,
+				tags.map(t => ({
+					label: t.name,
+					description: t.description,
+					value: t.hid
+				})),
+				"Which tags best fit your server?",
+				{
+					min_values: 1, max_values: tags.length,
+					placeholder: "Select tags"
+				}
+			)
+
+			if(tgs.err) return tgs;
+			sub.tags = tgs.values;
+			await sub.save();
+			await sub.getTags();
+			await tgs.message.delete();
+		}
+
+		var channel = await ctx.guild.channels.fetch(sub.resolved.category.channel);
+		var msg = await channel.send(this.genPost(sub, 'post'));
+		await this.stores.posts.create({
+			server_id: ctx.guild.id,
+			channel_id: channel.id,
+			message_id: msg.id,
+			submission: sub.hid
+		})
+
+		return {
+			content: "Submission created and posted.",
+			ephemeral: true
+		};
+	}
+
 	genPost(data, type) {
 		return {embeds: [POSTS[type](data)]};
 	}
@@ -374,10 +464,7 @@ class ServerHandler {
 				embed.color = 0x55aa55;
 				embed.footer.text += ' | Submission accepted.';
 
-				var m = await channel.send({
-					embeds: [this.genPost(submission, 'post')],
-					components: BUTTONS.edit(submission.hid)
-				})
+				var m = await channel.send(this.genPost(submission, 'post'));
 				await msg.edit({embeds: [embed], components: []});
 				await this.stores.posts.create({
 					server_id: ctx.guild.id,
@@ -451,20 +538,21 @@ class ServerHandler {
 	}
 
 	async handleEdit(ctx) {
-		await ctx.deferReply({ ephemeral: true });
-		var post = await this.stores.posts.get(ctx.guild.id, ctx.message.id);
+		var post = await this.stores.posts.get(ctx.guild.id, ctx.targetMessage.id);
 		if(!post?.id) return;
 
 		var cfg = await this.stores.configs.get(ctx.guild.id);
-		if(!cfg.edits) return await ctx.followUp('No edit request channel set. Ask a mod to set one first.');
+		if(!cfg.requests) return 'No edit request channel set. Ask a mod to set one first.';
 
 		var sub = await this.stores.submissions.get(ctx.guild.id, post.submission);
-		if(!ctx.member.permissions.has('ManageMessages'))
-			if(ctx.user.id !== sub.user_id);
-				return await ctx.followUp({
-					content: "You don't have permission to edit that post.",
-					ephemeral: true
-				});
+		await sub.getTags();
+		if(!ctx.member.permissions.has('ManageMessages')) {
+			if(ctx.user.id !== sub.user_id)
+				return "You don't have permission to edit that post.";
+		}
+
+		var prev = await this.stores.edits.getBySubmission(ctx.guild.id, post.submission);
+		if(prev?.length) return "There's already a pending edit request for that server.";
 
 		var m = await this.bot.utils.awaitModal(
 			ctx,
@@ -473,52 +561,62 @@ class ServerHandler {
 			false,
 			5 * 60_000
 		)
-		if(!m) return await ctx.followUp("No data received.");
+		if(!m) return "No data received.";
 
 		var ed = await this.stores.edits.create({
 			host: ctx.guild.id,
-			server: sub.hid,
+			server_id: sub.hid,
 			user_id: ctx.user.id,
 			changes: {
-				name: m.fields.getField('name').trim(),
-				description: m.fields.getField('description').trim(),
-				link: m.fields.getField('link').trim()
+				name: m.fields.getField('name').value.trim(),
+				description: m.fields.getField('description').value.trim(),
+				link: m.fields.getField('link').value.trim(),
+				icon_url: m.fields.getField('icon_url').value.trim()
 			}
 		})
 
 		var nm = ed.changes.name;
 		if(ed.changes.name != sub.name) nm += ` (previously ${sub.name})`;
+		console.log({...sub});
 		try {
-			var chan = await ctx.guild.channels.fetch(cfg.edit_requests);
+			var chan = await ctx.guild.channels.fetch(cfg.requests);
 			await chan.send({
-				embeds: [{
-					author: {
-						name: 'Edit request received'
-					},
-					title: nm,
-					description: ed.changes.description,
-					fields: [{
-						name: "Link",
-						value: ed.changes.link
-					}]
-				}],
+				...this.genPost({
+					...sub,
+					name: nm,
+					...ed.changes
+				}, 'post'),
 				components: BUTTONS.editPost(ed.hid)
 			})
 		} catch(e) {
 			console.error(e);
-			return await ctx.followUp("An error occurred. Please try again later.");
+			return "An error occurred. Please try again later.";
 		}
 
-		return await ctx.followUp("Your edit request has been received. Please wait while a mod reviews it.");
+		return "Your edit request has been received. Please wait while a mod reviews it.";
 	}
 
 	async handleEditPost(ctx) {
 		var split = ctx.customId.split('-');
 		var ed = await this.stores.edits.get(ctx.guild.id, split[1]);
 		var sub = await this.stores.submissions.get(ctx.guild.id, ed.server);
+		var posts = await sub.getPosts();
 		var action = split[2];
 
-		var msg;
+		var edm = ctx.message;
+		switch(action) {
+			case 'deny':
+				try {
+					var user = await this.bot.users.fetch(ed.user_id);
+
+				} catch(e) {
+					return await ctx.followUp({
+						content: e.message ?? e,
+						ephemeral: true
+					})
+				}
+				break;
+		}
 	}
 }
 

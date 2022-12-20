@@ -41,6 +41,16 @@ class Submission extends DataObject {
 		this.resolved.category = cat;
 		return cat;
 	}
+
+	async getPosts() {
+		var posts = await this.store.bot.stores.posts.getBySubmission(
+			this.host,
+			this.hid
+		);
+
+		this.resolved.posts = posts;
+		return posts;
+	}
 }
 
 class SubmissionStore extends DataStore {

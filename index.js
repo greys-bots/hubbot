@@ -37,8 +37,8 @@ const bot = new FrameClient({
 }, {
 	invite: process.env.INVITE,
 	statuses: [
-		(bot) => `/h | in ${bot.guilds.cache.size} guilds!`,
-		(bot) => `/h | serving ${bot.users.cache.size} users!`
+		(bot) => `/help | in ${bot.guilds.cache.size} guilds!`,
+		(bot) => `/help | serving ${bot.users.cache.size} users!`
 	]
 });
 

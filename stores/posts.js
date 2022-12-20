@@ -92,6 +92,19 @@ class PostStore extends DataStore {
 		} else return new Post(this, KEYS, {});
 	}
 
+	async getBySubmission(server, sub) {
+		try {
+			var data = await this.db.query(`SELECT * FROM posts WHERE server_id = $1 AND submission = $2`,[server, sub]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		if(data.rows?.[0]) {
+			return data.rows.map(p => new Post(this, KEYS, p));
+		} else return undefined;
+	}
+
 	async update(id, data = {}) {
 		try {
 			await this.db.query(`UPDATE posts SET ${Object.keys(data).map((k, i) => k+"=$"+(i+2)).join(",")} WHERE id = $1`,[id, ...Object.values(data)]);

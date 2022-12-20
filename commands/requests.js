@@ -7,8 +7,8 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: "channel",
-			description: "Set the channel for submissions",
+			name: "requests",
+			description: "Set the channel for edit requests",
 			options: [
 				{
 					name: 'channel',
@@ -25,7 +25,7 @@ class Command extends SlashCommand {
 				}
 			],
 			usage: [
-				"- View the current channel",
+				"- View the current requests channel",
 				"[channel] - Set a new channel"
 			],
 			permissions: ['ManageMessages'],
@@ -42,11 +42,11 @@ class Command extends SlashCommand {
 		if(!chan) {
 			return {embeds: [{
 				title: 'Submission channel',
-				description: `${config.submission_channel ? `<#${config.submission_channel}>` : '(not set)'}`
+				description: `${config.requests ? `<#${config.channel.id}>` : '(not set)'}`
 			}]}
 		}
 
-		config.submission_channel = chan.id;
+		config.requests = chan.id;
 		await config.save();
 
 		return "Channel set!";

@@ -1,5 +1,4 @@
 const { Models: { SlashCommand } } = require('frame');
-const { ApplicationCommandOptionType: ACOT, ChannelType: CT } = require('discord.js');
 
 class Command extends SlashCommand {
 	#bot;
@@ -12,14 +11,18 @@ class Command extends SlashCommand {
 			usage: [
 				"- Runs a menu to add a new server"
 			],
-			guildOnly: true
+			guildOnly: true,
+			permissions: ['ManageMessages']
 		})
 		this.#bot = bot;
 		this.#stores = stores;
 	}
 
 	async execute(ctx) {
-		// TODO: add a function in the server handler for this
+		if(!ctx.member.permissions.has('ManageMessages')) return "You don't have permission to use this command.";
+		
+		var res = await this.#bot.handlers.server.addition(ctx);
+		return res;
 	}
 }
 
