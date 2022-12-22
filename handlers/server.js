@@ -229,8 +229,8 @@ class ServerHandler {
 			if(intr.type !== IT.MessageComponent) return;
 			if(intr.componentType !== CT.Button) return;
 			if(intr.customId.startsWith('edit-')) return this.handleEdit(intr);
-			if(intr.customId.startsWith('ep-')) return this.handleEditPost(intr);
-			this.handleButtons(intr);
+			if(intr.customId.startsWith('ep-')) return this.handleEditButtons(intr);
+			this.handleSubmissionButtons(intr);
 		})
 	}
 
@@ -326,7 +326,7 @@ class ServerHandler {
 				...sub,
 				user: ctx.user,
 				timestamp: new Date()
-			}),
+			}, "submission"),
 			components: BTNS.SUB(false)
 		});
 
@@ -562,53 +562,123 @@ class ServerHandler {
 			5 * 60_000
 		)
 		if(!m) return "No data received.";
+		var mx = await m.followUp({content: "Data received", ephemeral: true});
+		await mx.delete()
 
-		var ed = await this.stores.edits.create({
-			host: ctx.guild.id,
-			server_id: sub.hid,
-			user_id: ctx.user.id,
-			changes: {
-				name: m.fields.getField('name').value.trim(),
-				description: m.fields.getField('description').value.trim(),
-				link: m.fields.getField('link').value.trim(),
-				icon_url: m.fields.getField('icon_url').value.trim()
-			}
-		})
-
-		var nm = ed.changes.name;
-		if(ed.changes.name != sub.name) nm += ` (previously ${sub.name})`;
-		console.log({...sub});
-		try {
-			var chan = await ctx.guild.channels.fetch(cfg.requests);
-			await chan.send({
-				...this.genPost({
-					...sub,
-					name: nm,
-					...ed.changes
-				}, 'post'),
-				components: BUTTONS.editPost(ed.hid)
-			})
-		} catch(e) {
-			console.error(e);
-			return "An error occurred. Please try again later.";
+		var changes = {
+			name: m.fields.getField('name').value.trim(),
+			description: m.fields.getField('description').value.trim(),
+			link: m.fields.getField('link').value.trim(),
+			icon_url: m.fields.getField('icon_url').value.trim()
 		}
 
-		return "Your edit request has been received. Please wait while a mod reviews it.";
+		if(ctx.member.permissions.has('ManageMessages')) {
+			for(var prop in changes) {
+				sub[prop] = changes[prop];
+			}
+	
+			await sub.save();
+			var errs = await sub.updatePosts(ctx);
+			if(errs.length) console.log(`Post update errors for ${sub.hid}:`, errs);
+			return "Edit made.";
+		} else {
+			var ed = await this.stores.edits.create({
+				host: ctx.guild.id,
+				server_id: sub.hid,
+				user_id: ctx.user.id,
+				changes
+			})
+			
+			var nm = changes.name;
+			if(changes.name != sub.name) nm += ` (previously ${sub.name})`;
+			try {
+				var chan = await ctx.guild.channels.fetch(cfg.requests);
+				await chan.send({
+					...this.genPost({
+						...sub,
+						...ed.changes,
+						name: nm
+					}, 'post'),
+					components: BUTTONS.editPost(ed.hid)
+				})
+			} catch(e) {
+				console.error(e);
+				return "An error occurred. Please try again later.";
+			}
+
+			return "Your edit request has been received. Please wait while a mod reviews it.";
+		}
 	}
 
-	async handleEditPost(ctx) {
+	async handleEditButtons(ctx) {
 		var split = ctx.customId.split('-');
 		var ed = await this.stores.edits.get(ctx.guild.id, split[1]);
-		var sub = await this.stores.submissions.get(ctx.guild.id, ed.server);
+		var sub = await this.stores.submissions.get(ctx.guild.id, ed.server_id);
 		var posts = await sub.getPosts();
 		var action = split[2];
 
-		var edm = ctx.message;
+		var edm = ctx.message.embeds[0].toJSON();
 		switch(action) {
 			case 'deny':
 				try {
 					var user = await this.bot.users.fetch(ed.user_id);
+					await user.send({
+						embeds: [{
+							title: "Edit request denied",
+							description: `Your edit request for ${sub.name} (${sub.hid}) has been denied.`,
+							color: 0xaa5555
+						}]
+					})
 
+					await ctx.update({
+						embeds: [{
+							...edm,
+							color: 0xaa5555,
+							author: {
+								name: "Edit request denied"
+							}
+						}],
+						components: []
+					})
+
+					await ed.delete()
+				} catch(e) {
+					return await ctx.followUp({
+						content: e.message ?? e,
+						ephemeral: true
+					})
+				}
+				break;
+			case 'accept':
+				try {
+					var user = await this.bot.users.fetch(ed.user_id);
+					await user.send({
+						embeds: [{
+							title: "Edit request accepted",
+							description: `Your edit request for ${sub.name} (${sub.hid}) has been accepted!`,
+							color: 0x55aa55
+						}]
+					})
+
+					await ctx.update({
+						embeds: [{
+							...edm,
+							color: 0x55aa55,
+							author: {
+								name: "Edit request accepted"
+							}
+						}],
+						components: []
+					})
+
+					for(var prop in ed.changes) {
+						sub[prop] = ed.changes[prop];
+					}
+					
+					await sub.save();
+					var errs = await sub.updatePosts(ctx);
+					if(errs.length) console.log(`Post update errors for ${sub.hid}:`, errs);
+					await ed.delete();
 				} catch(e) {
 					return await ctx.followUp({
 						content: e.message ?? e,

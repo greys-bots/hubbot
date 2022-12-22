@@ -51,6 +51,57 @@ class Submission extends DataObject {
 		this.resolved.posts = posts;
 		return posts;
 	}
+
+	async updatePosts(ctx) {
+		var posts = await this.getPosts();
+		await this.getTags();
+
+		var chans = {};
+		var errs = [];
+		for(var p of posts) {
+			try {
+				if(!chans[p.channel_id]) {
+					chans[p.channel_id] = await ctx.guild.channels.fetch(p.channel_id);
+				}
+
+				var ch = chans[p.channel_id];
+				var m = await ch.messages.fetch(p.message_id);
+
+				await m.edit(this.genPost())
+			} catch(e) {
+				errs.push({
+					message: p.message_id,
+					channel: p.channel_id,
+					error: e.message ?? e
+				})
+			}
+		}
+
+		return errs;
+	}
+
+	genPost() {
+		return {embeds: [{
+			title: this.name,
+			description: this.description,
+			fields: [
+				{
+					name: 'Link',
+					value: this.link
+				},
+				{
+					name: "Tags",
+					value: this.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
+				}
+			],
+			footer: {
+				text: `Server ID: ${this.hid}`
+			},
+			thumbnail: {
+				url: this.icon_url
+			}
+		}]}
+	}
 }
 
 class SubmissionStore extends DataStore {
