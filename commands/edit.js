@@ -19,7 +19,10 @@ class Command extends SlashCommand {
     }
 
     async execute(ctx) {
-        var res = await this.#bot.handlers.server.handleEdit(ctx);
+        var post = await this.#stores.posts.get(ctx.guild.id, ctx.targetMessage.id);
+		if(!post?.id) return "That isn't a server post.";
+
+		var res = await this.#bot.handlers.server.handleEdit(post.submission, ctx);
         if(res) return res;
     }
 }

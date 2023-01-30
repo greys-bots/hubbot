@@ -27,6 +27,14 @@ class PostStore extends DataStore {
 			message_id			TEXT,
 			submission 			TEXT
 		)`)
+
+		this.bot.on('channelDelete', async (ch) => {
+			await this.deleteByChannel(ch.guild.id, ch.id)
+		})
+
+		this.bot.on('messageDelete', async (m) => {
+			await this.deleteByMessage(m.guild.id, m.channel.id, m.id)
+		})
 	}
 
 	async create(data = {}) {
@@ -119,6 +127,28 @@ class PostStore extends DataStore {
 	async delete(id) {
 		try {
 			await this.db.query(`DELETE FROM posts WHERE id = $1`, [id]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		return;
+	}
+
+	async deleteByChannel(server, channel) {
+		try {
+			await this.db.query(`DELETE FROM posts WHERE server_id = $1 AND channel_id = $2`, [server, channel]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		return;
+	}
+
+	async deleteByMessage(server, channel, message) {
+		try {
+			await this.db.query(`DELETE FROM posts WHERE server_id = $1 AND channel_id = $2 AND message_id = $3`, [server, channel, message]);
 		} catch(e) {
 			console.log(e);
 			return Promise.reject(e.message);

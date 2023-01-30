@@ -234,6 +234,35 @@ class SubmissionStore extends DataStore {
 		
 		return;
 	}
+
+	async search(server, query, tag, cat) {
+		try {
+			var data = await this.db.query(`SELECT * FROM submissions WHERE host = $1`,[server]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+
+		var subs = data.rows;
+		if(query) {
+			subs = subs.filter(x => (
+				x.name.toLowerCase().includes(query) ||
+				x.description.toLowerCase().includes(query)
+			))
+		}
+
+		if(tag) {
+			subs = subs.filter(x => x.tags.includes(tag));
+		}
+
+		if(cat) {
+			subs = subs.filter(x => x.category == cat)
+		}
+
+		if(subs.length) {
+			return subs.map(x => new Submission(this, KEYS, x));
+		} else return undefined;
+	}
 }
 
 module.exports = (bot, db) => new SubmissionStore(bot, db);

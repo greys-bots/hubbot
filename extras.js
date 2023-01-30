@@ -49,6 +49,25 @@ module.exports = {
 					disabled
 				},
 			]
-		}])
+		}]),
+		DELETE: [{
+			type: 1,
+			components: [
+				{
+					type: 2,
+					label: 'Delete',
+					custom_id: 'yes',
+					style: 4,
+					emoji: '🗑️'
+				},
+				{
+					type: 2,
+					label: 'Cancel',
+					custom_id: 'cancel',
+					style: 1,
+					emoji: '❌'
+				}
+			]
+		}]
 	},
 }

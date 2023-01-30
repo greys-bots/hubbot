@@ -537,21 +537,18 @@ class ServerHandler {
 		}
 	}
 
-	async handleEdit(ctx) {
-		var post = await this.stores.posts.get(ctx.guild.id, ctx.targetMessage.id);
-		if(!post?.id) return;
-
+	async handleEdit(server, ctx) {
 		var cfg = await this.stores.configs.get(ctx.guild.id);
 		if(!cfg.requests) return 'No edit request channel set. Ask a mod to set one first.';
 
-		var sub = await this.stores.submissions.get(ctx.guild.id, post.submission);
+		var sub = await this.stores.submissions.get(ctx.guild.id, server);
 		await sub.getTags();
 		if(!ctx.member.permissions.has('ManageMessages')) {
 			if(ctx.user.id !== sub.user_id)
 				return "You don't have permission to edit that post.";
 		}
 
-		var prev = await this.stores.edits.getBySubmission(ctx.guild.id, post.submission);
+		var prev = await this.stores.edits.getBySubmission(ctx.guild.id, server);
 		if(prev?.length) return "There's already a pending edit request for that server.";
 
 		var m = await this.bot.utils.awaitModal(

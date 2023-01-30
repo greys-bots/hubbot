@@ -7,7 +7,8 @@ class Command extends SlashCommand {
 	constructor(bot, stores) {
 		super({
 			name: "add",
-			description: "Manually a new server to listings",
+			description: "Manually add a new server to listings",
+			
 			usage: [
 				"- Runs a menu to add a new server"
 			],

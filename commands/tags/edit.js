@@ -74,7 +74,7 @@ class Command extends SlashCommand {
 		return tags.map(t => ({
 			name: t.name,
 			value: t.hid
-		}))
+		})).slice(0, 25)
 	}
 }
 
