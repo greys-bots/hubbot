@@ -288,7 +288,8 @@ class ServerHandler {
 			{
 				min_values: 1, max_values: 1,
 				placeholder: "Select a category"
-			}
+			},
+			true
 		)
 
 		if(cts.err) return cts.err;
@@ -309,7 +310,8 @@ class ServerHandler {
 				{
 					min_values: 1, max_values: tags.length,
 					placeholder: "Select tags"
-				}
+				},
+				true
 			)
 
 			if(tgs.err) return tgs;
