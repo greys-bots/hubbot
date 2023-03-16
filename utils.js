@@ -1,4 +1,58 @@
 module.exports = {
+	async awaitSelection(ctx, choices, msg, options = {min_values: 1, max_values: 1, placeholder: '- - -'}, ephemeral) {
+		var components = [{
+			type: 3,
+			custom_id: 'selector',
+			options: choices,
+			...options
+		}]
+
+		var reply;
+		if(ctx.replied || ctx.deferred) {
+			reply = await ctx.followUp({
+				content: msg,
+				components: [{
+					type: 1,
+					components
+				}],
+				ephemeral
+			});
+		} else {
+			reply = await ctx.reply({
+				content: msg,
+				components: [{
+					type: 1,
+					components
+				}],
+				fetchReply: true,
+				ephemeral
+			});
+		}
+
+		try {
+			var resp = await reply.awaitMessageComponent({
+				filter: (intr) => intr.user.id == ctx.user.id && intr.customId == 'selector',
+				time: 60000
+			});
+		} catch(e) { }
+		if(!resp) return 'Nothing selected!';
+		await resp.update({
+			components: [{
+				type: 1,
+				components: components.map(c => ({
+					...c,
+					disabled: true,
+					options: choices.map(ch => ({...ch, default: resp.values.includes(ch.value)}))
+				}))
+			}]
+		});
+
+		return {
+			values: resp.values,
+			message: reply
+		};
+	},
+	
 	getChoice: async (bot, msg, user, time, update = true) => {
 		return new Promise(res => {
 			function intListener(intr) {
