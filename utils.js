@@ -49,7 +49,8 @@ module.exports = {
 
 		return {
 			values: resp.values,
-			message: reply
+			message: reply,
+			inter: resp
 		};
 	},
 	

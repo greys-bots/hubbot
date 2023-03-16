@@ -296,7 +296,7 @@ class ServerHandler {
 		sub.category = cts.values[0];
 		await sub.save();
 		await sub.getCategory();
-		await cts.message.delete();
+		await cts.inter.deleteReply();
 
 		if(tags?.length) {
 			var tgs = await this.bot.utils.awaitSelection(
@@ -318,7 +318,7 @@ class ServerHandler {
 			sub.tags = tgs.values;
 			await sub.save();
 			await sub.getTags();
-			await tgs.message.delete();
+			await tgs.inter.deleteReply();
 		}
 
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
