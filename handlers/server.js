@@ -394,7 +394,8 @@ class ServerHandler {
 			{
 				min_values: 1, max_values: 1,
 				placeholder: "Select a category"
-			}
+			},
+			true
 		)
 
 		if(cts.err) return cts.err;
@@ -415,7 +416,8 @@ class ServerHandler {
 				{
 					min_values: 1, max_values: tags.length,
 					placeholder: "Select tags"
-				}
+				},
+				true
 			)
 
 			if(tgs.err) return tgs;
@@ -529,6 +531,7 @@ class ServerHandler {
 					}]})
 
 					await post.delete();
+					await submission.delete();
 				} catch(e) {
 					console.log(e);
 					return await msg.channel.send('Error: Submission denied, but I couldn\'t message the user.');
