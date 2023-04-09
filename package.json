@@ -1,0 +1,19 @@
+{
+  "name": "kh",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "discord.js": "^14.3.0",
+    "dotenv": "^16.0.1",
+    "frame": "github:greys-bots/frame",
+    "tinycolor2": "^1.4.2"
+  }
+}
