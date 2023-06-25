@@ -1,6 +1,6 @@
 const {Collection} = require("discord.js");
 
-async sleep(ms) {
+async function sleep(ms) {
 	return new Promise((res, rej) => {
 		setTimeout(() => res(), ms ?? 1000)
 	})
