@@ -1,5 +1,11 @@
 const {Collection} = require("discord.js");
 
+async sleep(ms) {
+	return new Promise((res, rej) => {
+		setTimeout(() => res(), ms ?? 1000)
+	})
+}
+
 class TicketStore extends Collection {
 	constructor(bot, db) {
 		super();
@@ -23,10 +29,11 @@ class TicketStore extends Collection {
 			var hid = this.bot.utils.genCode(this.bot.chars);
 			var time = new Date().toISOString();
 			try {
-				var channel = await this.bot.createChannel(server, `ticket-${hid}`, 0, "", {
+				var channel = await this.bot.createChannel(server, `ticket-${hid}`, 0, {
 					topic: `Ticket ${hid}`,
 					parentID: cfg.category_id
 				})
+				await sleep(500)
 				channel.editPermission(data.opener.id, 1024, 0, "member");
 			} catch(e) {
 				console.log(e);
