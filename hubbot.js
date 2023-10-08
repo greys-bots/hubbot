@@ -6,7 +6,13 @@ const path 		= require("path");
 
 require('dotenv').config();
 
-const bot 	= new Eris(process.env.TOKEN, {restMode: true});
+const bot 	= new Eris(process.env.TOKEN, {
+	restMode: true,
+	intents: [
+		"allNonPrivileged",
+		"guildMessages"
+	]
+});
 
 bot.chars 		= process.env.CHARS;
 bot.prefix 		= process.env.PREFIX;
@@ -39,6 +45,7 @@ bot.logVars = {
 const updateStatus = async function(){
 	bot.stores.servers.getAll(process.env.HUB_ID).then(data => {
 		if(data && data.length > 0) bot.editStatus({name: `Listing ${data.length} servers and counting!`});
+		else bot.editStatus({ name: `${bot.prefix}h`})
 	});
 
 	setTimeout(()=> updateStatus(),600000)

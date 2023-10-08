@@ -7,7 +7,7 @@
     "dblite": "^1.1.4",
     "discord.js": "^11.6.4",
     "dotenv": "^7.0.0",
-    "eris": "^0.15.0",
+    "eris": "^0.17.2",
     "eris-additions": "^1.4.1",
     "mysql": "^2.18.1",
     "node-fetch": "^2.6.1",
@@ -15,7 +15,6 @@
     "pg": "^8.6.0",
     "tinycolor2": "^1.4.2"
   },
-  "devDependencies": {},
   "scripts": {
     "start": "supervisor -e .js,.json -i data.sqlite,data.sqlite-journal hubbot.js"
   },
