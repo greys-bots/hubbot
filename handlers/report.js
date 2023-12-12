@@ -207,19 +207,17 @@ class ReportHandler {
 		})
 	}
 
-	async report(ctx = {
+	async report(ctx, data = {
 		type,
-		guild,
-		user,
-		data
+		name,
+		object_id
 	}) {
-		var {data} = ctx;
 		var cfg = await this.stores.configs.get(ctx.guild.id);
 		if(!cfg?.report_channel)
 			return "No report channel set. Please ask the mods to set one.";
 
 		var mod;
-		switch(ctx.type) {
+		switch(data.type) {
 			case 'user':
 				mod = MODALS.user;
 				break;
@@ -277,40 +275,22 @@ class ReportHandler {
 	}
 
 	async handleButtons(ctx) {
-		var post = await this.stores.submissionPosts.get(ctx.guild.id, ctx.message.id);
+		var post = await this.stores.reportPosts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
 		await ctx.deferUpdate();
 		var msg = ctx.message;
 
-		var submission = await this.stores.submissions.get(ctx.guild.id, post.submission);
-		if(!submission?.id) return await ctx.update({content: 'Submission deleted, post no longer needed.', embeds: [], components: []});
-		await submission.getCategory();
-		await submission.getTags();
-
+		var report = await this.stores.reports.get(ctx.guild.id, post.report);
+		if(!report?.id) return await ctx.update({content: 'Report deleted, post no longer needed.', embeds: [], components: []});
+		
 		var embed = msg.embeds[0].toJSON()
 		switch(ctx.customId) {
 			case 'accept':
-				try {
-					var channel = await ctx.guild.channels.fetch(submission.resolved.category.channel);
-				} catch(e) { }
-				if(!channel) return ctx.followUp("Category channel wasn't found. Please update the category this submission belongs to.");
-
-				embed.color = 0x55aa55;
-				embed.footer.text += ' | Submission accepted.';
-
-				var m = await channel.send(this.genPost(submission, 'post'));
-				await msg.edit({embeds: [embed], components: []});
-				await this.stores.posts.create({
-					server_id: ctx.guild.id,
-					channel_id: channel.id,
-					message_id: m.id,
-					submission: submission.hid
-				})
-				await post.delete();
+				return await ctx.followUp('Button acknowledged')
 				break;
 			case 'deny':
 				try {
-					var u2 = await this.bot.users.fetch(submission.user_id);
+					var u2 = await this.bot.users.fetch(report.user_id);
 				} catch(e) { }
 
 				var reason;
@@ -340,7 +320,7 @@ class ReportHandler {
 				await m.delete()
 
 				embed.color = 0xaa5555;
-				embed.footer.text += ' | Submission denied.';
+				embed.footer.text += ' | Report denied.';
 				embed.description += `\n\n**Denial reason:** ${reason ?? "*(no reason given)*"}`;
 
 				try {
@@ -350,10 +330,10 @@ class ReportHandler {
 					});
 
 					await u2.send({embeds: [{
-						title: 'Submission denied.',
+						title: 'Report denied.',
 						description: [
 							`Server: ${ctx.guild.name} (${ctx.guild.id})`,
-							`Submission: ${submission.name}`
+							`Report: ${submission.name}`
 						].join("\n"),
 						fields: [{name: 'Reason', value: reason ?? "*(no reason given)*"}],
 						color: 0xaa5555,
@@ -364,12 +344,24 @@ class ReportHandler {
 					await submission.delete();
 				} catch(e) {
 					console.log(e);
-					return await msg.channel.send('Error: Submission denied, but I couldn\'t message the user.');
+					return await msg.channel.send('Error: Report denied, but I couldn\'t message the user.');
 				}
 
-				return await ctx.followUp({content: 'Submission denied.', ephemeral: true});
+				return await ctx.followUp({content: 'Report denied.', ephemeral: true});
 				break;
 		}
+	}
+
+	async acceptUserReport(report) {
+		
+	}
+
+	async acceptListedServerReport() {
+
+	}
+
+	async acceptUnlistedServerReport() {
+
 	}
 }
 

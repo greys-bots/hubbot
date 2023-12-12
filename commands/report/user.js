@@ -35,12 +35,10 @@ class Command extends SlashCommand {
 			return "That is not a valid user ID."
 		}
 
-		var res = await this.#bot.handlers.report.report({
+		var res = await this.#bot.handlers.report.report(ctx, {
 			type: 'user',
 			name: us.username,
-			object_id: us.id,
-			guild: ctx.guild,
-			user: ctx.user
+			object_id: us.id
 		});
 		return res;
 	}
