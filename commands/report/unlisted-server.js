@@ -36,12 +36,10 @@ class Command extends SlashCommand {
 		var id = ctx.options.getString('id').trim();
 		var name = ctx.options.getString('name').trim();
 
-		var res = await this.#bot.handlers.report.report({
+		var res = await this.#bot.handlers.report.report(ctx, {
 			type: 'unlisted-server',
 			name,
-			object_id: id,
-			guild: ctx.guild,
-			user: ctx.user
+			object_id: id
 		});
 		return res;
 	}

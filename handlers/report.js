@@ -84,7 +84,6 @@ const POSTS = {
 
 		return {
 			title: type + " Report",
-			description: data.reason,
 			fields: [
 				{
 					name: 'Name',
@@ -93,6 +92,10 @@ const POSTS = {
 				{
 					name: 'ID',
 					value: data.object_id
+				},
+				{
+					name: "Reason",
+					value: data.reason
 				}
 			],
 			footer: {
@@ -107,84 +110,84 @@ const POSTS = {
 }
 
 const BUTTONS = {
-	listedServerPost(id) {
+	"listed-server": (id) => {
 		return [{
 			type: 1,
 			components: [
 				{
 					type: 2,
 					style: 3,
-					custom_id: `re-${id}-accept`,
+					custom_id: `0accept`,
 					label: "Delist server",
 					emoji: '✅'
 				},
 				{
 					type: 2,
 					style: 4,
-					custom_id: `re-${id}-deny`,
+					custom_id: `deny`,
 					label: "Deny report",
 					emoji: '❌'
 				},
 				{
 					type: 2,
 					style: 1,
-					custom_id: `re-${id}-ticket`,
+					custom_id: `ticket`,
 					label: "Open ticket",
 					emoji: '🎟️'
 				}
 			]
 		}]
 	},
-	unlistedServerPost(id) {
+	"unlisted-server": (id) => {
 		return [{
 			type: 1,
 			components: [
 				{
 					type: 2,
 					style: 3,
-					custom_id: `re-${id}-accept`,
+					custom_id: `accept`,
 					label: "Blacklist server",
 					emoji: '✅'
 				},
 				{
 					type: 2,
 					style: 4,
-					custom_id: `re-${id}-deny`,
+					custom_id: `deny`,
 					label: "Deny report",
 					emoji: '❌'
 				},
 				{
 					type: 2,
 					style: 1,
-					custom_id: `re-${id}-ticket`,
+					custom_id: `ticket`,
 					label: "Open ticket",
 					emoji: '🎟️'
 				}
 			]
 		}]
 	},
-	userPost(id) {
+	user(id) {
 		return [{
 			type: 1,
 			components: [
 				{
 					type: 2,
 					style: 3,
-					custom_id: `re-${id}-accept`,
+					custom_id: `accept`,
 					label: "Ban user",
 					emoji: '✅'
 				},
 				{
 					type: 2,
 					style: 4,
-					custom_id: `re-${id}-deny`,
+					custom_id: `deny`,
 					label: "Deny report",
 					emoji: '❌'
 				},
 				{
 					type: 2,
 					style: 1,
-					custom_id: `re-${id}-ticket`,
+					custom_id: `ticket`,
 					label: "Open ticket",
 					emoji: '🎟️'
 				}
@@ -243,7 +246,8 @@ class ReportHandler {
 			object_id: data.object_id,
 			name: data.name,
 			reporter: ctx.user.id,
-			reason: m.fields.getField('reason').value.trim()
+			reason: m.fields.getField('reason').value.trim(),
+			type: data.type
 		})
 
 		var channel = await ctx.guild.channels.fetch(cfg.report_channel);
@@ -254,7 +258,7 @@ class ReportHandler {
 				user: ctx.user,
 				timestamp: new Date()
 			}, "report"),
-			components: BTNS.SUB(false)
+			components: BUTTONS[data.type](sub.hid)
 		});
 
 		var post = await this.stores.reportPosts.create({

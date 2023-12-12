@@ -175,4 +175,4 @@ class BanHandler {
 	}
 }
 
-module.exports = (bot) => new ReportHandler(bot);
+module.exports = (bot) => new BanHandler(bot);

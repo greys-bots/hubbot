@@ -36,12 +36,10 @@ class Command extends SlashCommand {
 			"present on a post in this server."
 		);
 
-		var res = await this.#bot.handlers.report.report({
+		var res = await this.#bot.handlers.report.report(ctx, {
 			type: 'listed-server',
 			name: sub.name,
-			object_id: sub.server_id,
-			guild: ctx.guild,
-			user: ctx.user
+			object_id: sub.server_id
 		});
 		return res;
 	}
