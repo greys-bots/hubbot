@@ -6,11 +6,11 @@ class Command extends SlashCommand {
 
     constructor(bot, stores) {
         super({
-            name: 'report',
+            name: 'report-server',
             description: "Report a server",
             type: 3,
             usage: [
-                'Right click a server post -> `report`'
+                'Right click a server post -> `report-server`'
             ],
             ephemeral: true
         })
@@ -21,8 +21,17 @@ class Command extends SlashCommand {
     async execute(ctx) {
         var post = await this.#stores.posts.get(ctx.guild.id, ctx.targetMessage.id);
 		if(!post?.id) return "That isn't a server post.";
+        var sub = await this.#stores.submissions.get(ctx.guild.id, post.submission);
 
-		var res = await this.#bot.handlers.server.handleReport(post.submission, ctx);
+		var res = await this.#bot.handlers.report.report({
+            type: "listed-server",
+            data: {
+                name: sub.name,
+                object_id: sub.server_id
+            },
+            guild: ctx.guild,
+            user: ctx.user
+        });
         if(res) return res;
     }
 }

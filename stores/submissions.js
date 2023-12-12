@@ -187,6 +187,19 @@ class SubmissionStore extends DataStore {
 		} else return new Submission(this, KEYS, {host: server});
 	}
 
+	async getByServerID(server, id) {
+		try {
+			var data = await this.db.query(`SELECT * FROM submissions WHERE host = $1 and server_id = $2`,[server, id]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		if(data.rows?.[0]) {
+			return new Submission(this, KEYS, data.rows[0]);
+		} else return new Submission(this, KEYS, {host: server});
+	}
+
 	async getID(id) {
 		try {
 			var data = await this.db.query(`SELECT * FROM submissions WHERE id = $1`,[id]);

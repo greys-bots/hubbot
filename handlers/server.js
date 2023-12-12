@@ -117,24 +117,6 @@ const MODALS = {
 			}]
 		}]
 	}),
-	report: (ctx) => ({
-		title: "Server Report",
-		custom_id: 'server_report',
-		components: [{
-			type: 1,
-			components: [{
-				type: 4,
-				custom_id: 'reason',
-				style: 2,
-				label: "Enter your report reason below",
-				min_length: 1,
-				max_length: 1024,
-				required: true,
-				placeholder: "Server's gross :(",
-				value
-			}]
-		}]
-	})
 }
 
 const POSTS = {
@@ -229,27 +211,6 @@ const BUTTONS = {
 					style: 4,
 					custom_id: `ep-${id}-deny`,
 					label: "Deny edit",
-					emoji: '❌'
-				}
-			]
-		}]
-	},
-	reportPost(id) {
-		return [{
-			type: 1,
-			components: [
-				{
-					type: 2,
-					style: 3,
-					custom_id: `re-${id}-accept`,
-					label: "Delist server",
-					emoji: '✅'
-				},
-				{
-					type: 2,
-					style: 4,
-					custom_id: `re-${id}-deny`,
-					label: "Deny report",
 					emoji: '❌'
 				}
 			]
