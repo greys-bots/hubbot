@@ -29,15 +29,18 @@ class TicketStore extends Collection {
 			var hid = this.bot.utils.genCode(this.bot.chars);
 			var time = new Date().toISOString();
 			try {
+				var ch = await this.bot.getChannel(cfg.category_id);
 				var channel = await this.bot.createChannel(server, `ticket-${hid}`, 0, {
 					topic: `Ticket ${hid}`,
-					parentID: cfg.category_id
+					parentID: cfg.category_id,
+					permissionOverwrites: [
+						...ch.permissionOverwrites.map((x) => x),
+						{id: data.opener.id, allow: 1024, deny: 0, type: 1}
+					]
 				})
-				await sleep(500)
-				channel.editPermission(data.opener.id, 1024, 0, "member");
 			} catch(e) {
 				console.log(e);
-				return res({e: "Couldn't create and/or channel; please make sure I have permission and there are channel slots left"});
+				return res({e: "Couldn't create channel; please make sure I have permission and there are channel slots left"});
 			}
 
 			try {
