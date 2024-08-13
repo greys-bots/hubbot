@@ -41,9 +41,11 @@ class ReactPostStore extends Collection {
 					channel_id,
 					message_id,
 					roles,
-					page
-				) VALUES ($1,$2,$3,$4,$5)`,
-				[server, channel, message, data.roles || [], data.page || 0]);
+					page,
+					single,
+					required
+				) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+				[server, channel, message, data.roles || [], data.page || 0, data.single, data.required]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
@@ -61,9 +63,11 @@ class ReactPostStore extends Collection {
 					channel_id,
 					message_id,
 					roles,
-					page
-				) VALUES ($1,$2,$3,$4,$5)`,
-				[server, channel, message, data.roles || [], data.page || 0]);
+					page,
+					single,
+					required
+				) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+				[server, channel, message, data.roles || [], data.page || 0, data.single || false, data.required]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
@@ -330,21 +334,26 @@ class ReactPostStore extends Collection {
 	async handleReactions(msg, emoji, user) {
 		return new Promise(async (res, rej) => {
 			if(this.bot.user.id == user.id) return;
+			if(!msg.channel.guild) return;
 			var post = await this.get(msg.channel.guild.id, msg.id);
 			if(!post) return;
 			if(emoji.id) emoji.name = `:${emoji.name}:${emoji.id}`;
 			var role = post.roles.find(r => [emoji.name, `a${emoji.name}`].includes(r.emoji));
 			if(!role) return;
-			// var roles = post.roles.map(r => msg.channel.guild.roles.find(x => x.id == r.role_id)).filter(x => x);
+			var roles = post.roles.map(r => msg.channel.guild.roles.find(x => x.id == r.role_id)).filter(x => x && x.id != role.role_id);
 			role = msg.channel.guild.roles.find(r => r.id == role.role_id);
 			if(!role) return;
 			var member = await msg.channel.guild.getRESTMember(user.id);
 			if(!member) return;
 
+			if(post.category) var category = await this.bot.stores.reactCategories.get(msg.channel.guild.id, post.category);
+
 			try {
 				this.bot.removeMessageReaction(msg.channel.id, msg.id, emoji.name.replace(/^:/,""), user.id);
+				if(post.required && !member.roles.includes(post.required)) return;
 				if(member.roles.includes(role.id)) msg.channel.guild.removeMemberRole(user.id, role.id);
 				else msg.channel.guild.addMemberRole(user.id, role.id);
+				if(category && category.single) category.roles.forEach(r => { if(member.roles.includes(r.role_id)) msg.channel.guild.removeMemberRole(user.id, r.role_id)})
 			} catch(e) {
 				console.log(e);
 				var ch = await this.bot.getDMChannel(user.id);

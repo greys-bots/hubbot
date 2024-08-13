@@ -111,7 +111,9 @@ module.exports = async (bot) => {
 			channel_id		TEXT,
 			message_id		TEXT,
 			roles			TEXT[],
-			page 			INTEGER
+			page 			INTEGER,
+			single 			BOOLEAN,
+			required 		TEXT
 		);
 
 		CREATE TABLE IF NOT EXISTS receipts (
