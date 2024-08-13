@@ -286,14 +286,14 @@ class ServerHandler {
 			})),
 			"Which category best fits your server?",
 			{
-				min_values: 1, max_values: 1,
-				placeholder: "Select a category"
+				min_values: 1, max_values: cfg.multicategory ? categories.length : 1,
+				placeholder: "Select category"
 			},
 			true
 		)
 
 		if(cts.err) return cts.err;
-		sub.category = cts.values[0];
+		sub.category = cts.values;
 		await sub.save();
 		await sub.getCategory();
 		await cts.inter.deleteReply();
@@ -346,6 +346,7 @@ class ServerHandler {
 	}
 
 	async addition(ctx) {
+		var cfg = await this.stores.configs.get(ctx.guild.id);
 		var categories = await this.stores.categories.getAll(ctx.guild.id);
 		if(!categories?.length) return "Categories must be set up before submissions can be added.";
 		var tags = await this.stores.tags.getAll(ctx.guild.id);
@@ -392,14 +393,14 @@ class ServerHandler {
 			})),
 			"Which category best fits your server?",
 			{
-				min_values: 1, max_values: 1,
-				placeholder: "Select a category"
+				min_values: 1, max_values: cfg?.multicategory ? categories.length : 1,
+				placeholder: "Select category"
 			},
 			true
 		)
 
 		if(cts.err) return cts.err;
-		sub.category = cts.values[0];
+		sub.category = cts.values;
 		await sub.save();
 		await sub.getCategory();
 		await cts.message.delete();
@@ -427,14 +428,16 @@ class ServerHandler {
 			await tgs.message.delete();
 		}
 
-		var channel = await ctx.guild.channels.fetch(sub.resolved.category.channel);
-		var msg = await channel.send(this.genPost(sub, 'post'));
-		await this.stores.posts.create({
-			server_id: ctx.guild.id,
-			channel_id: channel.id,
-			message_id: msg.id,
-			submission: sub.hid
-		})
+		for(var c of sub.resolved.category) {
+			let channel = await ctx.guild.channels.fetch(c.channel);
+			let msg = await channel.send(this.genPost(sub, 'post'));
+			await this.stores.posts.create({
+				server_id: ctx.guild.id,
+				channel_id: channel.id,
+				message_id: msg.id,
+				submission: sub.hid
+			})
+		}
 
 		return {
 			content: "Submission created and posted.",
@@ -460,23 +463,28 @@ class ServerHandler {
 		var embed = msg.embeds[0].toJSON()
 		switch(ctx.customId) {
 			case 'accept':
-				try {
-					var channel = await ctx.guild.channels.fetch(submission.resolved.category.channel);
-				} catch(e) { }
-				if(!channel) return ctx.followUp("Category channel wasn't found. Please update the category this submission belongs to.");
-
+				var channels = [];
+				for(var c of submission.resolved.category) {
+					try {
+						var channel = await ctx.guild.channels.fetch(c.channel);
+						channels.push(channel)
+					} catch(e) { }
+					if(!channel) return ctx.followUp("Category channel wasn't found. Please update the category this submission belongs to.");
+				}
 				embed.color = 0x55aa55;
 				embed.footer.text += ' | Submission accepted.';
 
-				var m = await channel.send(this.genPost(submission, 'post'));
-				await msg.edit({embeds: [embed], components: []});
-				await this.stores.posts.create({
-					server_id: ctx.guild.id,
-					channel_id: channel.id,
-					message_id: m.id,
-					submission: submission.hid
-				})
-				await post.delete();
+				for(var c of channels) {
+					var m = await c.send(this.genPost(submission, 'post'));
+					await msg.edit({embeds: [embed], components: []});
+					await this.stores.posts.create({
+						server_id: ctx.guild.id,
+						channel_id: channel.id,
+						message_id: m.id,
+						submission: submission.hid
+					})
+					await post.delete();
+				}
 				break;
 			case 'deny':
 				try {

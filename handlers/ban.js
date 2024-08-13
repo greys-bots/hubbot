@@ -61,7 +61,7 @@ const BUTTONS = {
 					type: 2,
 					style: 3,
 					custom_id: `raw`,
-					label: "Raw ID(s)",
+					label: "Raw IDs",
 					emoji: '📝'
 				}
 			]
@@ -110,6 +110,7 @@ class BanHandler {
 				}
 
 				await u.ban(reason.slice(0, 256));
+				users.push({ name: u.tag, id: u.id });
 			} catch(e) {
 				console.log(e.message ?? e);
 				errs.push(u.id ?? u);
@@ -119,7 +120,7 @@ class BanHandler {
 
 		var sub = await this.stores.bans.create({
 			host: ctx.guild.id,
-			user_ids: data.users.map(x => x.id),
+			user_ids: users.map(x => x.id),
 			reason
 		})
 
@@ -134,10 +135,10 @@ class BanHandler {
 		var msg = await channel.send({
 			...this.genPost({
 				...sub,
-				users: data.users,
+				users,
 				timestamp: new Date()
 			}, "log"),
-			components: BTNS.SUB(false)
+			components: BUTTONS.post()
 		});
 
 		var post = await this.stores.banPosts.create({
@@ -163,7 +164,7 @@ class BanHandler {
 		await ctx.deferUpdate();
 		var msg = ctx.message;
 
-		var ban = await this.stores.bans.get(ctx.guild.id, post.report);
+		var ban = await this.stores.bans.get(ctx.guild.id, post.log);
 		if(!ban?.id) return await ctx.update({content: 'Ban deleted, post no longer needed.', embeds: [], components: []});
 		
 		var embed = msg.embeds[0].toJSON()

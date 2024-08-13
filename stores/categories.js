@@ -96,6 +96,19 @@ class CategoryStore extends DataStore {
 		} else return new Category(this, KEYS, {server_id: server});
 	}
 
+	async getID(id) {
+		try {
+			var data = await this.db.query(`SELECT * FROM categories WHERE id = $1`,[id]);
+		} catch(e) {
+			console.log(e);
+			return Promise.reject(e.message);
+		}
+		
+		if(data.rows?.[0]) {
+			return new Category(this, KEYS, data.rows[0]);
+		} else return new Category(this, KEYS, {});
+	}
+
 	async getByChannel(server, channel) {
 		try {
 			var data = await this.db.query(`SELECT * FROM categories WHERE server_id = $1 AND channel = $2`,[server, channel]);
@@ -135,17 +148,17 @@ class CategoryStore extends DataStore {
 		} else return undefined;
 	}
 
-	async getID(id) {
+	async getMany(server, ids) {
 		try {
-			var data = await this.db.query(`SELECT * FROM categories WHERE id = $1`,[id]);
+			var data = await this.db.query(`SELECT * FROM categories WHERE server_id = $1 AND hid = ANY($2)`,[server, ids]);
 		} catch(e) {
 			console.log(e);
 			return Promise.reject(e.message);
 		}
 		
 		if(data.rows?.[0]) {
-			return new Category(this, KEYS, data.rows[0]);
-		} else return new Category(this, KEYS, {});
+			return data.rows.map(x => new Category(this, KEYS, x));
+		} else return undefined;
 	}
 
 	async update(id, data = {}) {

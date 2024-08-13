@@ -33,7 +33,7 @@ class Submission extends DataObject {
 
 	async getCategory() {
 		if(!this.category) return;
-		var cat = await this.store.bot.stores.categories.get(
+		var cat = await this.store.bot.stores.categories.getMany(
 			this.host,
 			this.category
 		)
@@ -120,7 +120,7 @@ class SubmissionStore extends DataStore {
 			description 		TEXT,
 			link 				TEXT,
 			icon_url 			TEXT,
-			category			TEXT,
+			category			TEXT[],
 			tags 				TEXT[]
 		)`)
 	}
@@ -269,7 +269,7 @@ class SubmissionStore extends DataStore {
 		}
 
 		if(cat) {
-			subs = subs.filter(x => x.category == cat)
+			subs = subs.filter(x => x.category.includes(cat));
 		}
 
 		if(subs.length) {
