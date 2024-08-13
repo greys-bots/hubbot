@@ -17,10 +17,12 @@ class ReactCategoryStore extends Collection {
 					name,
 					description,
 					roles,
-					posts
-				) VALUES ($1,$2,$3,$4,$5,$6)`,
+					posts,
+	    			single,
+	    			required
+				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 				[hid, server, data.name || "", data.description || "",
-				data.roles || [], data.posts || []]);
+				data.roles || [], data.posts || [], data.single || false, data.required]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);
@@ -39,10 +41,11 @@ class ReactCategoryStore extends Collection {
 					name,
 					description,
 					roles,
-					posts
-				) VALUES ($1,$2,$3,$4,$5,$6)`,
+					posts,
+	    			required
+				) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 				[hid, server, data.name || "", data.description || "",
-				data.roles || [], data.posts || []]);
+				data.roles || [], data.posts || [], data.single || false, data.required]);
 			} catch(e) {
 				console.log(e);
 		 		return rej(e.message);

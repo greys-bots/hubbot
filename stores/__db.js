@@ -94,7 +94,9 @@ module.exports = async (bot) => {
 	    	name 			TEXT,
 	    	description 	TEXT,
 	    	roles 			TEXT[],
-	    	posts 			TEXT[]
+	    	posts 			TEXT[],
+	    	single 			BOOLEAN,
+	    	required 		TEXT
 	    );
 
 	    CREATE TABLE IF NOT EXISTS reactroles (
