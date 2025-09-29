@@ -76,11 +76,11 @@ class BanHandler {
 		this.bot = bot;
 		this.stores = bot.stores;
 
-		this.bot.on('interactionCreate', (intr) => {
+		/*this.bot.on('interactionCreate', (intr) => {
 			if(intr.type !== IT.MessageComponent) return;
 			if(intr.componentType !== CT.Button) return;
 			this.handleButtons(intr);
-		})
+		})*/
 	}
 
 	async ban(ctx, data = {
