@@ -7,8 +7,8 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: "autothread",
-			description: "Set whether threads should automatically be created on submissions",
+			name: "multicategory",
+			description: "Set whether submissions can be in multiple categories",
 			options: [
 				{
 					name: 'value',
@@ -44,12 +44,12 @@ class Command extends SlashCommand {
 
 		if(!value) {
 			return {embeds: [{
-				title: 'Autothread status',
-				description: `${config.autothread ? 'True' : 'False'}`
+				title: 'Multicategory status',
+				description: `${config.multicategory ? 'True' : 'False'}`
 			}]}
 		}
 
-		config.autothread = value == 'enabled' ? true : false;
+		config.multicategory = value == 'enabled' ? true : false;
 		await config.save();
 
 		return "Config set!";

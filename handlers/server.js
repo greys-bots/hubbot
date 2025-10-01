@@ -16,8 +16,22 @@ const MODALS = {
 					type: CT.ActionRow,
 					components: [{
 						type: CT.TextInput,
+						custom_id: 'link',
+						label: 'Server link',
+						placeholder: 'https://discord.gg/invite',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						required: true
+					}]
+				},
+				{
+					type: CT.ActionRow,
+					components: [{
+						type: CT.TextInput,
 						custom_id: 'description',
 						label: 'Server Description',
+						placeholder: 'Fun friendly server for all!',
 						style: TIS.Paragraph,
 						min_length: 1,
 						max_length: 2000,
@@ -28,12 +42,12 @@ const MODALS = {
 					type: CT.ActionRow,
 					components: [{
 						type: CT.TextInput,
-						custom_id: 'link',
-						label: 'Server link',
+						custom_id: 'banner',
+						label: 'Server banner url',
+						placeholder: 'https://example.com/image.png',
 						style: TIS.Short,
-						min_length: 1,
-						max_length: 100,
-						required: true
+						max_length: 128,
+						required: false
 					}]
 				}
 			]
@@ -120,78 +134,6 @@ const MODALS = {
 }
 
 const POSTS = {
-	submission: (data) => ({
-		title: data.name,
-		description: data.description,
-		fields: [
-			{
-				name: 'Link',
-				value: data.link
-			},
-			{
-				name: "Category",
-				value: data.resolved?.category?.name ?? '(not set)'
-			},
-			{
-				name: "Tags",
-				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
-			}
-		],
-		footer: {
-			text: `Server ID: ${data.hid}`
-		},
-		thumbnail: {
-			url: data.icon_url
-		},
-		author: {
-			name: data.user.tag,
-			icon_url: data.user.avatarURL()
-		}
-	}),
-	post: (data) => ({
-		title: data.name,
-		description: data.description,
-		fields: [
-			{
-				name: 'Link',
-				value: data.link
-			},
-			{
-				name: "Tags",
-				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
-			}
-		],
-		footer: {
-			text: `Server ID: ${data.hid}`
-		},
-		thumbnail: {
-			url: data.icon_url
-		}
-	}),
-	preview: (data) => ({
-		title: data.name,
-		description: data.description,
-		fields: [
-			{
-				name: 'Link',
-				value: data.link
-			},
-			{
-				name: "Tags",
-				value: data.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
-			},
-			{
-				name: `Submitted by`,
-				value: `<@${data.user_id}>`
-			}
-		],
-		footer: {
-			text: `Server ID: ${data.hid}`
-		},
-		thumbnail: {
-			url: data.icon_url
-		}
-	})
 }
 
 const BUTTONS = {
@@ -274,7 +216,8 @@ class ServerHandler {
 			name: guild.name,
 			description: m.fields.getField('description').value.trim(),
 			link: `https://discord.gg/${inv.code}`,
-			icon_url: guild.iconURL({dynamic: true})
+			icon_url: guild.iconURL({dynamic: true}),
+			banner_url: m.fields.getField('banner').value.trim(),
 		})
 
 		var cts = await this.bot.utils.awaitSelection(
@@ -324,12 +267,11 @@ class ServerHandler {
 		var channel = await ctx.guild.channels.fetch(cfg.submission_channel);
 
 		var msg = await channel.send({
-			...this.genPost({
-				...sub,
-				user: ctx.user,
-				timestamp: new Date()
-			}, "submission"),
-			components: BTNS.SUB(false)
+			flags: ['IsComponentsV2'],
+			components: [
+				...(await sub.genPost({ timestamp: new Date(), categories: true })),
+				...BTNS.SUB(false)
+			]
 		});
 
 		var post = await this.stores.submissionPosts.create({
@@ -381,7 +323,8 @@ class ServerHandler {
 			name: guild.name,
 			description: m.fields.getField('description').value.trim(),
 			link: `https://discord.gg/${inv.code}`,
-			icon_url: guild.iconURL({dynamic: true})
+			icon_url: guild.iconURL({dynamic: true}),
+			banner_url: m.fields.getField('banner').value.trim(),
 		})
 
 		var cts = await this.bot.utils.awaitSelection(
@@ -430,7 +373,10 @@ class ServerHandler {
 
 		for(var c of sub.resolved.category) {
 			let channel = await ctx.guild.channels.fetch(c.channel);
-			let msg = await channel.send(this.genPost(sub, 'post'));
+			let msg = await channel.send({
+				flags: ['IsComponentsV2'],
+				components: (await sub.genPost())
+			});
 			await this.stores.posts.create({
 				server_id: ctx.guild.id,
 				channel_id: channel.id,
@@ -445,11 +391,8 @@ class ServerHandler {
 		};
 	}
 
-	genPost(data, type) {
-		return {embeds: [POSTS[type](data)]};
-	}
-
 	async handleSubmissionButtons(ctx) {
+		var config = await this.stores.configs.get(ctx.guild.id);
 		var post = await this.stores.submissionPosts.get(ctx.guild.id, ctx.message.id);
 		if(!post?.id) return;
 		await ctx.deferUpdate();
@@ -460,7 +403,16 @@ class ServerHandler {
 		await submission.getCategory();
 		await submission.getTags();
 
-		var embed = msg.embeds[0].toJSON()
+		var embed = msg.components[0].toJSON();
+		var rest = msg.components.slice(1, msg.components.length - 1).map(x => x.toJSON());
+
+		var mlogs, dlogs;
+		if(config.mod_logs) {
+			mlogs = await ctx.guild.channels.fetch(config.mod_logs);
+		}
+		if(config.deny_logs) {
+			dlogs = await ctx.guild.channels.fetch(config.deny_logs);
+		}
 		switch(ctx.customId) {
 			case 'accept':
 				var channels = [];
@@ -471,12 +423,21 @@ class ServerHandler {
 					} catch(e) { }
 					if(!channel) return ctx.followUp("Category channel wasn't found. Please update the category this submission belongs to.");
 				}
-				embed.color = 0x55aa55;
-				embed.footer.text += ' | Submission accepted.';
+				embed.accent_color = 0x55aa55;
 
 				for(var c of channels) {
-					var m = await c.send(this.genPost(submission, 'post'));
-					await msg.edit({embeds: [embed], components: []});
+					var m = await c.send({
+						flags: ['IsComponentsV2'],
+						components: (await submission.genPost())
+					});
+					await msg.edit({components: [
+						embed,
+						...rest,
+						{
+							type: 10,
+							content: `-# Submission accepted by ${ctx.user} (${ctx.user.id})`
+						}
+					]});
 					await this.stores.posts.create({
 						server_id: ctx.guild.id,
 						channel_id: channel.id,
@@ -484,6 +445,40 @@ class ServerHandler {
 						submission: submission.hid
 					})
 					await post.delete();
+				}
+
+				if(mlogs) {
+					await mlogs.send({
+						flags: ['IsComponentsV2'],
+						components: [
+							{
+								type: 17,
+								accent_color: 0x55aa55,
+								components: [
+									{
+										type: 10,
+										content: '## Submission Accepted'
+									},
+									{
+										type: 14
+									},
+									{
+										type: 10,
+										content:
+											`### Responsible Moderator\n${ctx.user} (${ctx.user.id})\n` +
+											`### Submission\n${submission.name} (\`${submission.hid}\`) [(jump)](${msg.url})`
+									},
+									{
+										type: 14
+									},
+									{
+										type: 10,
+										content: `-# Date: ${this.bot.utils.formatTime()}`
+									}
+								]
+							}
+						]
+					})
 				}
 				break;
 			case 'deny':
@@ -493,10 +488,18 @@ class ServerHandler {
 
 				var reason;
 				var m = await msg.channel.send({
-					embeds: [{
-						title: 'Would you like to give a denial reason?'
-					}],
-					components: BTNS.DENY(false)
+					flags: ['IsComponentsV2'],
+					components: [
+						{
+							type: 17,
+							accent_color: 0xaa5555,
+							components: [{
+								type: 10,
+								content: 'Would you like to give a denial reason?'
+							}]
+						},
+						...BTNS.DENY(false)
+					]
 				});
 
 				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60 * 1000, false);
@@ -517,14 +520,18 @@ class ServerHandler {
 
 				await m.delete()
 
-				embed.color = 0xaa5555;
-				embed.footer.text += ' | Submission denied.';
-				embed.description += `\n\n**Denial reason:** ${reason ?? "*(no reason given)*"}`;
+				embed.accent_color = 0xaa5555;
 
 				try {
 					await msg.edit({
-						embeds: [embed],
-						components: []
+						components: [
+							embed,
+							...rest,
+							{
+								type: 10,
+								content: `-# Submission denied by ${ctx.user} (${ctx.user.id}) | **Reason:** ${reason ?? '(none given)'}`
+							}
+						]
 					});
 
 					await u2.send({embeds: [{
@@ -543,6 +550,69 @@ class ServerHandler {
 				} catch(e) {
 					console.log(e);
 					return await msg.channel.send('Error: Submission denied, but I couldn\'t message the user.');
+				}
+
+				if(mlogs) {
+					await mlogs.send({
+						flags: ['IsComponentsV2'],
+						components: [
+							{
+								type: 17,
+								accent_color: 0xaa5555,
+								components: [
+									{
+										type: 10,
+										content: '## Submission Denied'
+									},
+									{
+										type: 14
+									},
+									{
+										type: 10,
+										content:
+											`### Responsible Moderator\n${ctx.user} (${ctx.user.id})\n` +
+											`### Submission\n${submission.name} (\`${submission.hid}\`) [(jump)](${msg.url})\n` +
+											`### Reason\n${reason ?? "(none given)"}`
+											
+									},
+									{
+										type: 14
+									},
+									{
+										type: 10,
+										content: `-# Date: ${this.bot.utils.formatTime()}`
+									}
+								]
+							}
+						]
+					})
+				}
+
+				if(dlogs) {
+					await dlogs.send({
+						flags: ['IsComponentsV2'],
+						components: [
+							{
+								type: 17,
+								accent_color: 0xaa5555,
+								components: [
+									{
+										type: 10,
+										content: '## Submission Denied'
+									},
+									{
+										type: 14
+									},
+									{
+										type: 10,
+										content:
+											`### Submission\n${submission.name} (\`${submission.hid}\`)\n` +
+											`### Reason\n${reason ?? "(none given)"}`
+									}
+								]
+							}
+						]
+					})
 				}
 
 				return await ctx.followUp({content: 'Submission denied.', ephemeral: true});
@@ -568,12 +638,12 @@ class ServerHandler {
 			ctx,
 			MODALS.edit(ctx, sub),
 			ctx.user,
-			false,
+			true,
 			5 * 60_000
 		)
 		if(!m) return "No data received.";
-		var mx = await m.followUp({content: "Data received", ephemeral: true});
-		await mx.delete()
+		// var mx = await m.followUp({content: "Data received", ephemeral: true});
+		// await mx.delete()
 
 		var changes = {
 			name: m.fields.getField('name').value.trim(),
@@ -600,16 +670,15 @@ class ServerHandler {
 			})
 			
 			var nm = changes.name;
-			if(changes.name != sub.name) nm += ` (previously ${sub.name})`;
+			if(changes.name != sub.name) changes.name = nm + ` (previously ${sub.name})`;
 			try {
 				var chan = await ctx.guild.channels.fetch(cfg.requests);
 				await chan.send({
-					...this.genPost({
-						...sub,
-						...ed.changes,
-						name: nm
-					}, 'post'),
-					components: BUTTONS.editPost(ed.hid)
+					flags: ['IsComponentsV2'],
+					components: [
+						...(await sub.genPost({ changes, timestamp: new Date() })),
+						...BUTTONS.editPost(ed.hid)
+					]
 				})
 			} catch(e) {
 				console.error(e);
@@ -627,7 +696,7 @@ class ServerHandler {
 		var posts = await sub.getPosts();
 		var action = split[2];
 
-		var edm = ctx.message.embeds[0].toJSON();
+		var edm = ctx.message.components[0].toJSON();
 		switch(action) {
 			case 'deny':
 				try {
@@ -641,14 +710,16 @@ class ServerHandler {
 					})
 
 					await ctx.update({
-						embeds: [{
-							...edm,
-							color: 0xaa5555,
-							author: {
-								name: "Edit request denied"
+						components: [
+							{
+								...edm,
+								accent_color: 0xaa5555,
+							},
+							{
+								type: 10,
+								content: `-# Submission denied by ${ctx.user} (${ctx.user.id})`
 							}
-						}],
-						components: []
+						]
 					})
 
 					await ed.delete()
@@ -671,14 +742,16 @@ class ServerHandler {
 					})
 
 					await ctx.update({
-						embeds: [{
-							...edm,
-							color: 0x55aa55,
-							author: {
-								name: "Edit request accepted"
+						components: [
+							{
+								...edm,
+								accent_color: 0x55aa55,
+							},
+							{
+								type: 10,
+								content: `-# Submission accepted by ${ctx.user} (${ctx.user.id})`
 							}
-						}],
-						components: []
+						]
 					})
 
 					for(var prop in ed.changes) {

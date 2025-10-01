@@ -22,7 +22,8 @@ class Command extends SlashCommand {
 			],
 			extra: "Examples:\n"+
 				   "`/help command:form` - Shows form module help",
-			ephemeral: true
+			ephemeral: true,
+			v2: true
 		})
 		this.#bot = bot;
 		this.#stores = stores;
@@ -33,31 +34,45 @@ class Command extends SlashCommand {
 
 		var embeds = [];
 		var cmds;
-		if(!cn) {
-			embeds = [ ]
+		if(!cn) {			
 			var mods = this.#bot.slashCommands.map(m => m).filter(m => m.subcommands.size);
 			var ug = this.#bot.slashCommands.map(m => m).filter(m => !m.subcommands.size);
-			for(var m of mods) {
-				var e = {
-					title: m.name.toUpperCase(),
-					description: m.description
+			for(let m of mods) {
+				let e = {
+					components: [{
+						type: 17,
+						components: [{
+							type: 10,
+							content: `## ${m.name.toUpperCase()}\n${m.description}`
+						}]
+					}]
 				}
 
 				cmds = m.subcommands.map(o => o);
-				var tmp = await this.#bot.utils.genEmbeds(this.#bot, cmds, (c) => {
-					return {name: `/${m.name} ${c.name}`, value: c.description}
-				}, e, 10, {addition: ""})
-				embeds = embeds.concat(tmp.map(e => e.embed))
+				cmds.forEach(c => {
+					e.components[0].components.push({
+						type: 10,
+						content: `### /${m.name} ${c.name}\n${c.description}`
+					})
+				})
+				embeds.push(e);
 			}
 
 			if(ug?.[0]) {
 				var e = {
-					title: "UNGROUPED",
-					description: "Miscellaneous commands",
-					fields: []
+					components: [{
+						type: 17,
+						components: [{
+							type: 10,
+							content: `## UNGROUPED\nMiscellaneous commands`
+						}]
+					}]
 				}
 
-				for(var c of ug) e.fields.push({name: '/' + c.name, value: c.description});
+				for(var c of ug) e.components[0].components.push({
+					type: 10,
+					content: `### /${c.name}\n${c.description}`
+				});
 				embeds.push(e)
 			}
 		} else {
@@ -66,7 +81,7 @@ class Command extends SlashCommand {
 			var cm;
 			if(mod) {
 				cm = this.#bot.slashCommands.get(mod);
-				if(!cm) return "Module not found.";
+				if(!cm) return "Module not found!";
 				cmds = cm.subcommands.map(o => o);
 			} else {
 				cmds = this.#bot.slashCommands.map(c => c);
@@ -74,47 +89,66 @@ class Command extends SlashCommand {
 
 			if(cmd) {
 				cm = cmds.find(c => (c.name ?? c.name) == cmd);
-				if(!cm) return "Command not found.";
+				if(!cm) return "Command not found!";
 				cmds = cm.subcommands?.map(o => o);
 
 				if(scmd) {
 					cm = cmds?.find(c => (c.name ?? c.name) == scmd);
-					if(!cm) return "Subcommand not found.";
+					if(!cm) return "Subcommand not found!";
 				}
 			}
 
 			if(cm.subcommands?.size) {
-				embeds = await this.#bot.utils.genEmbeds(this.#bot, cm.subcommands.map(c => c), (c) => {
-					return {name: `**/${name.trim()} ${c.name}**`, value: c.description}
-				}, {
-					title: name.toUpperCase(),
-					description: cm.description,
-					color: 0x333399
-				}, 10, {addition: ""})
-				embeds = embeds.map(e => e.embed);
-			} else {
-				embeds = [{
-					title: name,
-					description: cm.description,
-					fields: [],
-					color: 0x333399
-				}]
+				let e = {
+					components: [{
+						type: 17,
+						accent_color: 0xf5e4b5,
+						components: [{
+							type: 10,
+							content: `# ${name.toUpperCase()}\n${cm.description}`
+						}]
+					}]
+				}
 
-				if(cm.usage?.length) embeds[embeds.length - 1].fields.push({
-					name: "Usage",
-					value: cm.usage.map(u => `/${name.trim()} ${u}`).join("\n")
+				cm.subcommands.map(o => o).forEach(c => {
+					e.components[0].components.push({
+						type: 10,
+						content: `### /${name.trim()} ${c.name}\n${c.description}`
+					})
 				})
 
-				if(cm.extra?.length) embeds[embeds.length - 1].fields.push({
-					name: "Extra",
-					value: cm.extra
-				});
+				embeds = [e];
+			} else {
+				let e = {
+					components: [{
+						type: 17,
+						accent_color: 0xf5e4b5,
+						components: [{
+							type: 10,
+							content: `# /${name}\n${cm.description}`
+						}]
+					}]
+				}
+
+				if(cm.usage?.length) e.components[0].components.push({
+					type: 10,
+					content: `### Usage\n` + cm.usage.map(u => `/${name.trim()} ${u}`).join("\n")
+				})
+
+				if(cm.extra?.length) e.components[0].components.push({
+					type: 10,
+					content: `### Extra\n` + cm.extra
+				})
+
+				if(cm.permissions?.length) e.components[0].components.push({
+					type: 10,
+					content: `### Permissions\n` + cm.permissions.join(", ")
+				})
+
+				embeds = [e];
 			}	
 		}
 
-		if(embeds.length > 1)
-			for(var i = 0; i < embeds.length; i++)
-				embeds[i].title += ` (${i+1}/${embeds.length})`;
 		return embeds;
 	}
 

@@ -6,7 +6,11 @@ const KEYS = {
 	submission_channel: { patch: true },
 	requests: { patch: true },
 	autothread: { patch: true },
-	multicategory: { patch: true }
+	multicategory: { patch: true },
+	deny_logs: { patch: true },
+	ban_logs: { patch: true },
+	mod_logs: { patch: true },
+	reports: { patch: true }
 }
 
 class Config extends DataObject {	
@@ -27,7 +31,11 @@ class ConfigStore extends DataStore {
 			submission_channel 	TEXT,
 			requests 			TEXT,
 			autothread			BOOLEAN,
-			multicategory 		BOOLEAN
+			multicategory 		BOOLEAN,
+			deny_logs 			TEXT,
+			ban_logs 			TEXT,
+			mod_logs 			TEXT,
+			reports		 		TEXT
 		)`)
 	}
 
@@ -38,11 +46,15 @@ class ConfigStore extends DataStore {
 				submission_channel,
 				requests,
 				autothread,
-				multicategory
-			) VALUES ($1,$2,$3,$4,$5)
+				multicategory,
+				deny_logs,
+				ban_logs,
+				mod_logs,
+				reports
+			) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 			RETURNING id`,
 			[data.server_id, data.submission_channel, data.requests,
-			 data.autothread, data.multicategory]);
+			 data.autothread, data.multicategory, data.deny_logs, data,ban_logs, data.mod_logs, data.reports]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);

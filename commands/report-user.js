@@ -6,11 +6,11 @@ class Command extends SlashCommand {
 
     constructor(bot, stores) {
         super({
-            name: 'report-user',
+            name: 'Report User',
             description: "Report a user",
             type: 3,
             usage: [
-                "Right click a user's post -> `report-user`"
+                "Right click a user's post -> `Report User`"
             ],
             ephemeral: true
         })
@@ -21,12 +21,10 @@ class Command extends SlashCommand {
     async execute(ctx) {
         var user = ctx.message.user;
 
-		var res = await this.#bot.handlers.report.report({
+		var res = await this.#bot.handlers.report.report(ctx, {
             type: "user",
-            data: {
-                name: user.username,
-                object_id: user.id
-            },
+            name: user.username,
+            object_id: user.id,
             guild: ctx.guild,
             user: ctx.user
         });

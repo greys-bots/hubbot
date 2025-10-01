@@ -42,11 +42,11 @@ class Command extends SlashCommand {
 		if(!chan) {
 			return {embeds: [{
 				title: 'Report channel',
-				description: `${config.report_channel ? `<#${config.report_channel}>` : '(not set)'}`
+				description: `${config.reports ? `<#${config.reports}>` : '(not set)'}`
 			}]}
 		}
 
-		config.report_channel = chan.id;
+		config.reports = chan.id;
 		await config.save();
 
 		return "Channel set!";

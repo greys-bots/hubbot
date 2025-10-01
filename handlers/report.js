@@ -216,7 +216,7 @@ class ReportHandler {
 		object_id
 	}) {
 		var cfg = await this.stores.configs.get(ctx.guild.id);
-		if(!cfg?.report_channel)
+		if(!cfg?.reports)
 			return "No report channel set. Please ask the mods to set one.";
 
 		var mod;
@@ -250,7 +250,7 @@ class ReportHandler {
 			type: data.type
 		})
 
-		var channel = await ctx.guild.channels.fetch(cfg.report_channel);
+		var channel = await ctx.guild.channels.fetch(cfg.reports);
 
 		var msg = await channel.send({
 			...this.genPost({

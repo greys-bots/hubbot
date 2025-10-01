@@ -9,19 +9,24 @@ class Command extends SlashCommand {
 
     constructor(bot, stores) {
         super({
-            name: 'delete',
-            description: "Delete a server",
+            name: 'delist',
+            description: "Delist a server",
             options: [
 				{
 					name: 'server',
-					description: 'The server to delete',
+					description: 'The server to delist',
 					type: ACOT.String,
 					required: true,
 					autocomplete: true
+				},
+				{
+					name: 'reason',
+					description: 'The reason to delist the server',
+					type: ACOT.String
 				}
 			],
             usage: [
-                `[server] - Delete a given server. Posts will delete automatically`
+                `[server] - Delist a given server. Posts will delete automatically`
             ]
         })
         this.#bot = bot;
@@ -36,7 +41,7 @@ class Command extends SlashCommand {
     	var posts = await sub.getPosts();
 
     	var m = await ctx.reply({
-    		content: 'Are you sure you want to delete this server?',
+    		content: 'Are you sure you want to delist this server?',
     		components: DELETE,
     		fetchReply: true
     	})

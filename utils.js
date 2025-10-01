@@ -1,4 +1,7 @@
 module.exports = {
+	formatTime(date = new Date(), format = 'F') {
+		return `<t:${Math.floor(date.getTime() / 1000)}:${format}>`
+	},
 	async awaitSelection(ctx, choices, msg, options = {min_values: 1, max_values: 1, placeholder: '- - -'}, ephemeral) {
 		var components = [{
 			type: 3,

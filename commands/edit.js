@@ -6,7 +6,7 @@ class Command extends SlashCommand {
 
     constructor(bot, stores) {
         super({
-            name: 'edit',
+            name: 'Request Edit',
             description: "Edit a post",
             type: 3,
             usage: [

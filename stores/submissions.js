@@ -11,7 +11,10 @@ const KEYS = {
 	link: { patch: true },
 	icon_url: { patch: true },
 	category: { patch: true },
-	tags: { patch: true }
+	tags: { patch: true },
+	color: { patch: true },
+	banner_url: { patch: true },
+	contacts: { patch: true }
 }
 
 class Submission extends DataObject {	
@@ -80,27 +83,81 @@ class Submission extends DataObject {
 		return errs;
 	}
 
-	genPost() {
-		return {embeds: [{
-			title: this.name,
-			description: this.description,
-			fields: [
-				{
-					name: 'Link',
-					value: this.link
-				},
-				{
-					name: "Tags",
-					value: this.resolved?.tags?.map(t => t.name).join(", ") ?? '(not set)'
-				}
-			],
-			footer: {
-				text: `Server ID: ${this.hid}`
+	async genPost(data = {}) {
+		var info = data?.changes ? Object.assign({}, this, data.changes) : this;
+		var post = [
+			{
+				type: 17,
+				accent_color: info.color ? parseInt(info.color, 16) : 3447003,
+				components: [
+					{
+						type: 9,
+						components: [{
+							type: 10,
+							content: `## ${info.name}\n${info.description}`
+						}],
+						accessory: {
+							type: 11,
+							media: {
+								url: info.icon_url
+							}
+						}
+					},
+					{
+						type: 14
+					},
+					{
+						type: 10,
+						content: `### Representatives\n${[info.user_id].concat(info.contacts ?? []).map(x => `<@${x}>`)}`
+					},
+					{
+						type: 10,
+						content: `### Link\n${info.link}`
+					}
+				]
 			},
-			thumbnail: {
-				url: this.icon_url
+			{
+				type: 10,
+				content: `-# Server ID: \`${this.hid}\``
 			}
-		}]}
+		];
+
+		if(data?.categories) {
+			var cats = await this.getCategory();
+			console.log("Categories:", cats);
+			post[0].components.push({
+				type: 10,
+				content: `### Categories\n` + cats.map(c => c.name).join(", ")
+			})
+		}
+
+		if(this.tags?.length) {
+			var tags = await this.getTags();
+			post[0].components.push({
+				type: 10,
+				content: '### Tags\n' + tags.map(t => t.name).join(", ")
+			})
+		}
+
+		if(this.banner_url) {
+			post[0].components.push({
+				type: 12,
+				items: [{
+					media: {
+						url: this.banner_url
+					}
+				}]
+			})
+		}
+
+		if(data?.timestamp) {
+			post.push({
+				type: 10,
+				content: `-# Received: ${this.store.bot.utils.formatTime(data.timestamp, 'F')}`
+			})
+		}
+
+		return post;
 	}
 }
 
@@ -121,7 +178,10 @@ class SubmissionStore extends DataStore {
 			link 				TEXT,
 			icon_url 			TEXT,
 			category			TEXT[],
-			tags 				TEXT[]
+			tags 				TEXT[],
+			color 				TEXT,
+			banner_url 			TEXT,
+			contacts 			TEXT[]
 		)`)
 	}
 
@@ -137,11 +197,14 @@ class SubmissionStore extends DataStore {
 				link,
 				icon_url,
 				category,
-				tags
-			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9)
+				tags,
+				color,
+				banner_url,
+				contacts
+			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 			RETURNING id`,
 			[data.host, data.server_id, data.user_id, data.name, data.description,
-			 data.link, data.icon_url, data.category, data.tags]);
+			 data.link, data.icon_url, data.category, data.tags, data.color, data.banner_url, data.contacts]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -162,10 +225,13 @@ class SubmissionStore extends DataStore {
 				link,
 				icon_url,
 				category,
-				tags
-			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+				tags,
+				color,
+				banner_url,
+				contacts
+			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 			[data.host, data.server_id, data.user_id, data.name, data.description,
-			 data.link, data.icon_url, data.category, data.tags]);
+			 data.link, data.icon_url, data.category, data.tags, data.contacts]);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);

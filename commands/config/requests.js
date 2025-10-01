@@ -42,7 +42,7 @@ class Command extends SlashCommand {
 		if(!chan) {
 			return {embeds: [{
 				title: 'Submission channel',
-				description: `${config.requests ? `<#${config.channel.id}>` : '(not set)'}`
+				description: `${config.requests ? `<#${config.requests}>` : '(not set)'}`
 			}]}
 		}
 

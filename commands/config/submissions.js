@@ -7,7 +7,7 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: "channel",
+			name: "submissions",
 			description: "Set the channel for submissions",
 			options: [
 				{
