@@ -1,4 +1,5 @@
 const { Models: { SlashCommand } } = require('frame');
+const { ApplicationCommandOptionType: ACOT, ChannelType: CT } = require('discord.js');
 
 class Command extends SlashCommand {
 	#bot;
@@ -6,10 +7,10 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: "submit",
-			description: "Submit a listing for review",
+			name: "report",
+			description: "Report a resource or user",
 			usage: [
-				"- Opens a dialogue to submit your listing"
+				"- Opens a dialogue to submit a report"
 			],
 			ephemeral: true
 		})
@@ -18,7 +19,7 @@ class Command extends SlashCommand {
 	}
 
 	async execute(ctx) {
-		var res = await this.#bot.handlers.server.submission(ctx);
+		var res = await this.#bot.handlers.report.report(ctx, {});
 		return res;
 	}
 }

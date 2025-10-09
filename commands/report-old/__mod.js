@@ -6,7 +6,7 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: 'report',
+			name: 'report-old',
 			description: "Commands for submitting reports on servers or users",
 			guildOnly: true,
 			permissions: [],

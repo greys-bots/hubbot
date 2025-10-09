@@ -24,9 +24,9 @@ class Command extends SlashCommand {
         var sub = await this.#stores.submissions.get(ctx.guild.id, post.submission);
 
 		var res = await this.#bot.handlers.report.report(ctx, {
-            type: "listed-server",
+            type: "listed",
             name: sub.name,
-            object_id: sub.hid,
+            object_id: sub.server_id,
             guild: ctx.guild,
             user: ctx.user
         });

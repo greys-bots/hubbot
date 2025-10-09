@@ -7,42 +7,98 @@ const {
 const { buttons: BTNS } = require('../extras')
 
 const MODALS = {
-	user(ctx) {
+	report(ctx, data = { type: '', object_id: '', name: '' }) {
 		return {
-			title: "Report a User",
+			title: "Report",
 			custom_id: `${ctx.guild.id}-${ctx.user.id}`,
 			components: [
 				{
-					type: CT.ActionRow,
-					components: [{
+					type: CT.Label,
+					label: "Report Type",
+					description: "Please select whether you're reporting a user or a server.",
+					component: {
+						type: CT.StringSelect,
+						custom_id: 'type',
+						min_values: 1,
+						max_values: 1,
+						required: true,
+						placeholder: "Select a type...",
+						options: [
+							{
+								label: 'User',
+								value: 'user',
+								description: "I am reporting a user on Discord",
+								default: (data.type == 'user' ? true : false)
+							},
+							{
+								label: "Listed Resource",
+								value: 'listed',
+								description: "I am reporting a server/link that is listed with the hub",
+								default: (data.type == 'listed' ? true : false)
+							},
+							{
+								label: "Unlisted Resource",
+								value: 'unlisted',
+								description: "I am reporting a server/resource that is NOT listed with the hub",
+								default: (data.type == 'unlisted' ? true : false)
+							}
+						]
+					}
+				},
+				{
+					type: CT.Label,
+					label: "User/Server Name",
+					description: "Please share the name of who/what you're reporting.",
+					component: {
+						type: CT.TextInput,
+						custom_id: 'object-name',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						required: true,
+						value: data.name ?? null
+					}
+				},
+				{
+					type: CT.Label,
+					label: "User/Server ID",
+					description: "Please share the ID of who/what you're reporting.\nNOTE: We can't act on reports without an ID.",
+					component: {
+						type: CT.TextInput,
+						custom_id: 'object-id',
+						style: TIS.Short,
+						min_length: 1,
+						max_length: 100,
+						required: true,
+						value: data.object_id ?? null,
+						placeholder: 'Value should look like this: 12345678987654321'
+					}
+				},
+				{
+					type: CT.Label,
+					label: "Report Reason",
+					description: "Enter your reason for reporting below.",
+					component: {
 						type: CT.TextInput,
 						custom_id: 'reason',
-						label: 'Report Reason',
 						style: TIS.Paragraph,
 						min_length: 1,
 						max_length: 2000,
 						required: true
-					}]
-				}
-			]
-		}
-	},
-	server(ctx) {
-		return {
-			title: "Report a Server",
-			custom_id: `${ctx.guild.id}-${ctx.user.id}`,
-			components: [
+					}
+				},
 				{
-					type: CT.ActionRow,
-					components: [{
+					type: CT.Label,
+					label: "Report Evidence",
+					description: "Please enter links to any images of evidence you have for your report.",
+					component: {
 						type: CT.TextInput,
-						custom_id: 'reason',
-						label: 'Report Reason',
+						custom_id: 'evidence',
 						style: TIS.Paragraph,
 						min_length: 1,
 						max_length: 2000,
 						required: true
-					}]
+					}
 				}
 			]
 		}
@@ -74,10 +130,10 @@ const POSTS = {
 			case 'user':
 				type = 'User';
 				break;
-			case 'listed-server':
+			case 'listed':
 				type = 'Listed Server';
 				break;
-			case 'unlisted-server':
+			case 'unlisted':
 				type = 'Unlisted Server'
 				break;
 		}
@@ -110,7 +166,7 @@ const POSTS = {
 }
 
 const BUTTONS = {
-	"listed-server": (id) => {
+	"listed": (id) => {
 		return [{
 			type: 1,
 			components: [
@@ -138,7 +194,7 @@ const BUTTONS = {
 			]
 		}]
 	},
-	"unlisted-server": (id) => {
+	"unlisted": (id) => {
 		return [{
 			type: 1,
 			components: [
@@ -219,19 +275,9 @@ class ReportHandler {
 		if(!cfg?.reports)
 			return "No report channel set. Please ask the mods to set one.";
 
-		var mod;
-		switch(data.type) {
-			case 'user':
-				mod = MODALS.user;
-				break;
-			case 'listed-server':
-			case 'unlisted-server':
-				mod = MODALS.server;
-				break;
-		}
 		var m = await this.bot.utils.awaitModal(
 			ctx,
-			mod(ctx),
+			MODALS.report(ctx, data),
 			ctx.user,
 			false,
 			5 * 60_000
@@ -240,6 +286,12 @@ class ReportHandler {
 
 		var md = await m.fetchReply();
 		await md.delete();
+
+		console.log(m.fields);
+		return {
+			content: "Report received. Please wait while a moderator reviews it.",
+			ephemeral: true
+		};
 
 		var sub = await this.stores.reports.create({
 			host: ctx.guild.id,

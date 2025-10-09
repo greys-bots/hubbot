@@ -34,8 +34,10 @@ class Command extends SlashCommand {
     }
 
     async execute(ctx) {
+    	var cfg = await this.#stores.configs.get(ctx.guild.id);
     	var server = ctx.options.getString('server').trim();
     	var sub = await this.#stores.submissions.get(ctx.guild.id, server);
+    	var reason = ctx.options.getString('reason')?.trim();
     	if(!sub?.id) return "Server not found.";
 
     	var posts = await sub.getPosts();
@@ -48,6 +50,80 @@ class Command extends SlashCommand {
 
     	var conf = await this.#bot.utils.getConfirmation(this.#bot, m, ctx.user);
     	if(conf.msg) return conf.msg;
+
+    	var dlog, mlog;
+    	if(cfg.deny_logs) dlog = await ctx.guild.channels.fetch(cfg.deny_logs);
+    	if(cfg.mod_logs) mlog = await ctx.guild.channels.fetch(cfg.mod_logs);
+
+    	if(mlogs) {
+			await mlogs.send({
+				flags: ['IsComponentsV2'],
+				components: [
+					{
+						type: 17,
+						accent_color: 0xaa5555,
+						components: [
+							{
+								type: 10,
+								content: '## Submission Delisted'
+							},
+							{
+								type: 14
+							},
+							{
+								type: 10,
+								content:
+									`### Responsible Moderator\n${ctx.user} (${ctx.user.id})\n` +
+									`### Submission\n${sub.name} (\`${sub.hid}\`)\n` +
+									`### Reason\n${reason ?? "(none given)"}`
+									
+							},
+							{
+								type: 14
+							},
+							{
+								type: 10,
+								content: `-# Date: ${this.bot.utils.formatTime()}` + (sub.server_id ? ` | Server ID: ${sub.server_id}` : '')
+							}
+						]
+					}
+				]
+			})
+		}
+
+		if(dlogs) {
+			await dlogs.send({
+				flags: ['IsComponentsV2'],
+				components: [
+					{
+						type: 17,
+						accent_color: 0xaa5555,
+						components: [
+							{
+								type: 10,
+								content: '## Submission Delisted'
+							},
+							{
+								type: 14
+							},
+							{
+								type: 10,
+								content:
+									`### Submission\n${sub.name} (\`${sub.hid}\`)\n` +
+									`### Reason\n${reason ?? "(none given)"}`
+							}
+						]
+					},
+					{
+						type: 14
+					},
+					{
+						type: 10,
+						content: `-# Date: ${this.bot.utils.formatTime()}` + (sub.server_id ? ` | Server ID: ${sub.server_id}` : '')
+					}
+				]
+			})
+		}
 
     	await sub.delete();
     	var channels = {}; // cache channels in case of multiple posts in a channel
@@ -70,8 +146,8 @@ class Command extends SlashCommand {
 	    	}
     	}
 
-    	if(errs.length) return "The server was deleted, but some posts could not be removed:\n" + errs.join('\n');
-    	else return "Server deleted. All posts have automatically been removed.";
+    	if(errs.length) return "The submission was delisted, but some posts could not be removed:\n" + errs.join('\n');
+    	else return "Submission delisted. All posts have automatically been removed.";
     }
 
     async auto(ctx) {

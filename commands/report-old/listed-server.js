@@ -7,18 +7,12 @@ class Command extends SlashCommand {
 
 	constructor(bot, stores) {
 		super({
-			name: "unlisted-server",
-			description: "Report a non-listed server",
+			name: "listed-server",
+			description: "Report a listed server",
 			options: [
 				{
 					name: 'id',
 					description: 'The ID of the server',
-					type: ACOT.String,
-					required: true
-				},
-				{
-					name: 'name',
-					description: 'The name of the server',
 					type: ACOT.String,
 					required: true
 				}
@@ -34,12 +28,18 @@ class Command extends SlashCommand {
 
 	async execute(ctx) {
 		var id = ctx.options.getString('id').trim();
-		var name = ctx.options.getString('name').trim();
+		var sub = await this.#stores.submissions.get(ctx.guild.id, id);
+		if(!sub) sub = await this.#stores.submissions.getByServerID(ctx.guild.id, id);
+		if(!sub) return (
+			"The ID given does not match a listed server. " +
+			"You can use either the server's Discord-provided ID, or the ID " + 
+			"present on a post in this server."
+		);
 
 		var res = await this.#bot.handlers.report.report(ctx, {
-			type: 'unlisted-server',
-			name,
-			object_id: id
+			type: 'listed',
+			name: sub.name,
+			object_id: sub.server_id
 		});
 		return res;
 	}

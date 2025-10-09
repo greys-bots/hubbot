@@ -19,7 +19,8 @@ class Command extends SlashCommand {
     }
 
     async execute(ctx) {
-        var user = ctx.message.user;
+        var user = ctx.targetMessage.author;
+        console.log(ctx.targetMessage)
 
 		var res = await this.#bot.handlers.report.report(ctx, {
             type: "user",
