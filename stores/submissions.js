@@ -14,7 +14,8 @@ const KEYS = {
 	tags: { patch: true },
 	color: { patch: true },
 	banner_url: { patch: true },
-	contacts: { patch: true }
+	contacts: { patch: true },
+	status: { patch: true }
 }
 
 class Submission extends DataObject {	
@@ -153,7 +154,7 @@ class Submission extends DataObject {
 		if(data?.timestamp) {
 			post.push({
 				type: 10,
-				content: `-# Received: ${this.store.bot.utils.formatTime(data.timestamp, 'F')}`
+				content: `-# Received ${this.store.bot.utils.formatTime(data.timestamp, 'F')}`
 			})
 		}
 
@@ -181,7 +182,8 @@ class SubmissionStore extends DataStore {
 			tags 				TEXT[],
 			color 				TEXT,
 			banner_url 			TEXT,
-			contacts 			TEXT[]
+			contacts 			TEXT[],
+			status 				TEXT
 		)`)
 	}
 
@@ -200,11 +202,13 @@ class SubmissionStore extends DataStore {
 				tags,
 				color,
 				banner_url,
-				contacts
-			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+				contacts,
+				status
+			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
 			RETURNING id`,
 			[data.host, data.server_id, data.user_id, data.name, data.description,
-			 data.link, data.icon_url, data.category, data.tags, data.color, data.banner_url, data.contacts]);
+			 data.link, data.icon_url, data.category, data.tags, data.color, data.banner_url, data.contacts,
+			 data.status ?? 'pending']);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -228,10 +232,12 @@ class SubmissionStore extends DataStore {
 				tags,
 				color,
 				banner_url,
-				contacts
-			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+				contacts,
+				status
+			) VALUES (find_unique('submissions'), $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
 			[data.host, data.server_id, data.user_id, data.name, data.description,
-			 data.link, data.icon_url, data.category, data.tags, data.contacts]);
+			 data.link, data.icon_url, data.category, data.tags, data.color, data.banner_url, data.contacts,
+			 data.status ?? 'pending']);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);

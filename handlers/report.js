@@ -47,8 +47,8 @@ const MODALS = {
 				},
 				{
 					type: CT.Label,
-					label: "User/Server Name",
-					description: "Please share the name of who/what you're reporting.",
+					label: "User/Server Name(s)",
+					description: "Please share the name(s) of who/what you're reporting.",
 					component: {
 						type: CT.TextInput,
 						custom_id: 'object-name',
@@ -61,17 +61,17 @@ const MODALS = {
 				},
 				{
 					type: CT.Label,
-					label: "User/Server ID",
-					description: "Please share the ID of who/what you're reporting.\nNOTE: We can't act on reports without an ID.",
+					label: "User/Server ID(s)",
+					description: "Please share the ID(s) of who/what you're reporting.\nNOTE: We can't act on reports without an ID.",
 					component: {
 						type: CT.TextInput,
 						custom_id: 'object-id',
-						style: TIS.Short,
+						style: TIS.Paragraph,
 						min_length: 1,
-						max_length: 100,
+						max_length: 200,
 						required: true,
 						value: data.object_id ?? null,
-						placeholder: 'Value should look like this: 12345678987654321'
+						placeholder: 'If reporting multiple things, please put IDs on new lines! Example:\n1234567898765\n9876543212345'
 					}
 				},
 				{
@@ -124,59 +124,10 @@ const MODALS = {
 	})
 }
 
-const POSTS = {
-	report: (data) => {
-		var type;
-		switch(data.type) {
-			case 'user':
-				type = 'User';
-				break;
-			case 'listed':
-				type = 'Listed Server';
-				break;
-			case 'unlisted':
-				type = 'Unlisted Server'
-				break;
-		}
-
-		return {
-			type: 17,
-			components: [
-				{
-					type: 10,
-					content: `# ${type} Report`,
-				},
-				{
-					type: 10,
-					content: `## Name\n${data.name}`
-				},
-				{
-					type: 10,
-					content: `## User/Server ID\n${data.object_id}`
-				},
-				{
-					type: 10,
-					content: `## Reason\n${data.reason}`
-				},
-				{
-					type: 10,
-					content: `## Evidence\n${data.evidence}`
-				},
-				{
-					type: 14
-				},
-				{
-					type: 10,
-					content: `-# Report ID: ${data.hid}\n` +
-					`-# Submitted by ${data.user} (${data.user.id})`
-				}
-			]
-		}
-	}
-}
+const POSTS = { }
 
 const BUTTONS = {
-	"listed": (id) => {
+	listed: (id) => {
 		return [{
 			type: 1,
 			components: [
@@ -204,7 +155,7 @@ const BUTTONS = {
 			]
 		}]
 	},
-	"unlisted": (id) => {
+	unlisted: (id) => {
 		return [{
 			type: 1,
 			components: [
@@ -259,6 +210,27 @@ const BUTTONS = {
 				}
 			]
 		}]
+	},
+	confirm(id) {
+		return [{
+			type: 1,
+			components: [
+				{
+					type: 2,
+					style: 3,
+					custom_id: `yes`,
+					label: "Agree and Continue",
+					emoji: '✅'
+				},
+				{
+					type: 2,
+					style: 4,
+					custom_id: `no`,
+					label: "Cancel Report",
+					emoji: '❌'
+				}
+			]
+		}]
 	}
 }
 
@@ -285,8 +257,77 @@ class ReportHandler {
 		if(!cfg?.reports)
 			return "No report channel set. Please ask the mods to set one.";
 
+		var conf;
+		if(!data.object_id) {
+			var agree = await ctx.reply({
+				withResponse: true,
+				flags: ['Ephemeral', 'IsComponentsV2'],
+				components: [
+					{
+						type: 17,
+						accent_color: 0xaa5555,
+						components: [
+							{
+								type: 10,
+								content: `# Report Submission Process`
+							},
+							{
+								type: 10,
+								content: (
+									`## Before continuing...\n` +
+									`You will need to have prepared:\n` +
+									`- A name for the user(s)/server(s) you are reporting (this can be their username, a group name, or some other name)\n` +
+									`- The Discord ID(s) of the user(s)/server(s) you are reporting (**We cannot act on reports without some kind of ID.**)\n` +
+									`- The reason you are submitting the report\n` +
+									`- Links to any evience you have to back up the report (eg. a Google Drive folder with the images or other direct media links)\n\n` +
+									`**Without this information, your report will most likely be denied.** Repeated failure to give proper information with reports may ` +
+									`result in being blacklisted from submitting reports or removal from the server altogether.`
+								)
+							},
+							{
+								type: 10,
+								content: (
+									`## Process\n` +
+									`Once your report is submitted, moderators will review the evidence received and come to a conclusion.\n` +
+									`If more is needed from you, a member of staff will reach out and discuss things with you.\n\n` +
+									`**Reviewing reports may take some time.** As long as you are still in the server and ` +
+									`have DMs enabled, you will be notified when a decision is reached.`
+								)
+							},
+							{
+								type: 10,
+								content: (
+									`## Agreement\n` +
+									`Pressing the button below will acknowledge the above and show a modal for the submission. `+
+									`Please press this once you have everything prepared.\n` +
+									`If you'd like to cancel the report, simply hit the cancel button below or exit out of the modal ` +
+									`once it pops up.`
+								)
+							}
+						]
+					},
+					...BUTTONS.confirm()
+				]
+			});
+
+			try {
+				conf = await agree.resource.message.awaitMessageComponent({
+					filter: (int) => int.user.id == ctx.user.id,
+					time: 5 * 60 * 60 * 1000
+				})
+			} catch(e) {
+				console.error(e);
+			}
+
+			await ctx.deleteReply();
+
+			if(!conf?.customId) return "Error: Timed out!";
+			if(conf.customId == 'no') return 'Action cancelled.';
+		}
+			
+
 		var m = await this.bot.utils.awaitModal(
-			ctx,
+			data.object_id ? ctx : conf,
 			MODALS.report(ctx, data),
 			ctx.user,
 			false,
@@ -297,34 +338,29 @@ class ReportHandler {
 		var md = await m.fetchReply();
 		await md.delete();
 
-		console.log(m.fields/*.get('type').values*/);
-		return {
-			content: "Report received. Please wait while a moderator reviews it.",
-			ephemeral: true
-		};
-
 		var mdata = {
-			type: m.fields.get('type').values[0],
-			object_id: m.fields.get('object_id').value.trim(),
+			type: m.fields.getField('type').values[0],
+			object_id: m.fields.getField('object-id').value.trim(),
+			name: m.fields.getField('object-name').value.trim(),
+			reason: m.fields.getField('reason').value.trim(),
+			evidence: m.fields.getField('evidence').value.trim()
 		}
 
 		var sub = await this.stores.reports.create({
 			host: ctx.guild.id,
 			name: data.name,
 			reporter: ctx.user.id,
-			reason: m.fields.getField('reason').value.trim(),
-			type: data.type
+			...mdata
 		})
 
 		var channel = await ctx.guild.channels.fetch(cfg.reports);
 
 		var msg = await channel.send({
-			...this.genPost({
-				...sub,
-				user: ctx.user,
-				timestamp: new Date()
-			}, "report"),
-			components: BUTTONS[data.type](sub.hid)
+			flags: ['IsComponentsV2'],
+			components: [
+				...(await sub.genPost({ log: false, timestamp: new Date() })),
+				...BUTTONS[mdata.type](sub.hid)
+			]
 		});
 
 		var post = await this.stores.reportPosts.create({
@@ -338,10 +374,6 @@ class ReportHandler {
 			content: "Report received. Please wait while a moderator reviews it.",
 			ephemeral: true
 		};
-	}
-
-	genPost(data, type) {
-		return {embeds: [POSTS[type](data)]};
 	}
 
 	async handleButtons(ctx) {

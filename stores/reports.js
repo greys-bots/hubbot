@@ -7,14 +7,96 @@ const KEYS = {
 	object_id: { },
 	reporter: { },
 	name: { },
-	reason: { },
-	type: {  }
+	reason: { patch: true },
+	evidence: { patch: true },
+	type: {  },
+	status: { patch: true }
 }
 
 class Report extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
 		this.resolved = {};
+	}
+
+	async genPost(data = { log: false, timestamp: new Date() } ) {
+		var type;
+		switch(this.type) {
+			case 'user':
+				type = 'User ' + (data?.log ? `Ban Log` : `Report`);
+				break;
+			case 'listed':
+				type = 'Server ' + (data?.log ? `Delist Log` : `Report (listed)`);
+				break;
+			case 'unlisted':
+				type = 'Server ' + (data?.log ? `Blacklist Log` : `Report (unlisted)`);
+				break;
+		}
+
+		var color;
+		if(data?.log) color = 0xaa5555;
+		else {
+			switch(this.status) {
+				case 'pending':
+					color = 0xccaa55;
+					break;
+				case 'accepted':
+					color = 0x55aa55;
+					break;
+				case 'denied':
+					color = 0xaa5555;
+					break;
+			}
+		}
+
+		var post = [
+			{
+				type: 17,
+				accent_color: color,
+				components: [
+					{
+						type: 10,
+						content: `# ${type}`,
+					},
+					{
+						type: 10,
+						content: `## Name\n${this.name}`
+					},
+					{
+						type: 10,
+						content: `## User/Server ID\n${this.object_id}`
+					},
+					{
+						type: 10,
+						content: `## Reason\n${this.reason}`
+					},
+					{
+						type: 10,
+						content: `## Evidence\n${this.evidence}`
+					}
+				]
+			},
+			{
+				type: 10,
+				content: `-# Report ID: ${this.hid}`
+			}
+		];
+
+		if(!data?.log) {
+			post.push({
+				type: 10,
+				content: `-# Submitted by <@${this.reporter}> (${this.reporter})`
+			})
+		}
+
+		if(data?.timestamp) {
+			post.push({
+				type: 10,
+				content: `-# Received ${this.store.bot.utils.formatTime(data.timestamp, 'F')}`
+			})
+		}
+
+		return post;
 	}
 }
 
@@ -32,7 +114,9 @@ class ReportStore extends DataStore {
 			reporter			TEXT,
 			name 				TEXT,
 			reason		 		TEXT,
-			type 				TEXT
+			evidence			TEXT,
+			type 				TEXT,
+			status 				TEXT
 		)`)
 	}
 
@@ -45,11 +129,13 @@ class ReportStore extends DataStore {
 				reporter,
 				name,
 				reason,
-				type
-			) VALUES (find_unique('reports'), $1,$2,$3,$4,$5,$6)
+				evidence,
+				type,
+				status
+			) VALUES (find_unique('reports'), $1,$2,$3,$4,$5,$6,$7,$8)
 			RETURNING id`,
-			[data.host, data.object_id, data.reporter, data.name, data.reason,
-			 data.type]);
+			[data.host, data.object_id, data.reporter, data.name, data.reason, data.evidence,
+			 data.type, data.status ?? 'pending']);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
@@ -67,10 +153,11 @@ class ReportStore extends DataStore {
 				reporter,
 				name,
 				reason,
-				type
-			) VALUES (find_unique('reports'), $1,$2,$3,$4,$5,$6)`,
+				type,
+				status
+			) VALUES (find_unique('reports'), $1,$2,$3,$4,$5,$6,$7)`,
 			[data.host, data.object_id, data.reporter, data.name, data.reason,
-			 data.type]);
+			 data.type, data.status ?? 'pending']);
 		} catch(e) {
 			console.log(e);
 	 		return Promise.reject(e.message);
