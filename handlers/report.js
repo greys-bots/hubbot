@@ -107,18 +107,19 @@ const MODALS = {
 		title: "Deny reason",
 		custom_id: 'deny_reason',
 		components: [{
-			type: 1,
-			components: [{
+			type: CT.Label,
+			label: "Deny Reason",
+			description: "Enter the deny reason below",
+			component: {
 				type: 4,
 				custom_id: 'reason',
 				style: 2,
-				label: "Enter the reason below",
 				min_length: 1,
 				max_length: 1024,
 				required: true,
 				placeholder: "Big meanie :(",
 				value
-			}]
+			}
 		}]
 	})
 }
@@ -139,28 +140,37 @@ const POSTS = {
 		}
 
 		return {
-			title: type + " Report",
-			fields: [
+			type: 17,
+			components: [
 				{
-					name: 'Name',
-					value: data.name
+					type: 10,
+					content: `# ${type} Report`,
 				},
 				{
-					name: 'ID',
-					value: data.object_id
+					type: 10,
+					content: `## Name\n${data.name}`
 				},
 				{
-					name: "Reason",
-					value: data.reason
+					type: 10,
+					content: `## User/Server ID\n${data.object_id}`
+				},
+				{
+					type: 10,
+					content: `## Reason\n${data.reason}`
+				},
+				{
+					type: 10,
+					content: `## Evidence\n${data.evidence}`
+				},
+				{
+					type: 14
+				},
+				{
+					type: 10,
+					content: `-# Report ID: ${data.hid}\n` +
+					`-# Submitted by ${data.user} (${data.user.id})`
 				}
-			],
-			footer: {
-				text: `Report ID: ${data.hid}`
-			},
-			author: {
-				name: data.user.tag,
-				icon_url: data.user.avatarURL()
-			}
+			]
 		}
 	}
 }
@@ -287,15 +297,19 @@ class ReportHandler {
 		var md = await m.fetchReply();
 		await md.delete();
 
-		console.log(m.fields);
+		console.log(m.fields/*.get('type').values*/);
 		return {
 			content: "Report received. Please wait while a moderator reviews it.",
 			ephemeral: true
 		};
 
+		var mdata = {
+			type: m.fields.get('type').values[0],
+			object_id: m.fields.get('object_id').value.trim(),
+		}
+
 		var sub = await this.stores.reports.create({
 			host: ctx.guild.id,
-			object_id: data.object_id,
 			name: data.name,
 			reporter: ctx.user.id,
 			reason: m.fields.getField('reason').value.trim(),
