@@ -1,10 +1,12 @@
 import {
 	ComponentType as CT,
 	TextInputStyle as TIS,
-	InteractionType as IT
+	InteractionType as IT,
+	MessageFlags,
 } from 'discord.js';
 
 import { buttons as BTNS } from '../extras.js';
+import { formatTime } from '../utils.js';
 
 const MODALS = {
 	report(ctx, data = { type: '', object_id: '', name: '' }) {
@@ -134,7 +136,7 @@ const BUTTONS = {
 				{
 					type: 2,
 					style: 3,
-					custom_id: `0accept`,
+					custom_id: `accept`,
 					label: "Delist server",
 					emoji: '✅'
 				},
@@ -385,14 +387,16 @@ export class ReportHandler {
 		var report = await this.stores.reports.get(ctx.guild.id, post.report);
 		if(!report?.id) return await ctx.update({content: 'Report deleted, post no longer needed.', embeds: [], components: []});
 		
-		var embed = msg.embeds[0].toJSON()
+		let comps = msg.components.map(c => c.toJSON());
+		comps.pop();
+		var embed = comps[0];
 		switch(ctx.customId) {
 			case 'accept':
 				return await ctx.followUp('Button acknowledged')
 				break;
 			case 'deny':
 				try {
-					var u2 = await this.bot.users.fetch(report.user_id);
+					var u2 = await this.bot.users.fetch(report.reporter);
 				} catch(e) { }
 
 				var reason;
@@ -404,11 +408,11 @@ export class ReportHandler {
 				});
 
 				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60 * 1000, false);
-				if(!resp.choice) return await ctx.followUp({content: 'Nothing selected.', ephemeral: true});
+				if(!resp.choice) return await ctx.followUp({content: 'Nothing selected.', flags: [MessageFlags.Ephemeral]});
 				switch(resp.choice) {
 					case 'cancel':
 						await m.delete()
-						return resp.interaction.reply({content: 'Action cancelled.', ephemeral: true});
+						return resp.interaction.reply({content: 'Action cancelled.', flags: [MessageFlags.Ephemeral]});
 					case 'reason':
 						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.deny(reason), ctx.user, false, 5 * 60_000);
 						if(mod) reason = mod.fields.getTextInputValue('reason')?.trim();
@@ -421,38 +425,64 @@ export class ReportHandler {
 
 				await m.delete()
 
-				embed.color = 0xaa5555;
-				embed.footer.text += ' | Report denied.';
-				embed.description += `\n\n**Denial reason:** ${reason ?? "*(no reason given)*"}`;
+				embed.accent_color = 0xaa5555;
+				comps[0] = embed;
+				let footer = {
+					type: 10,
+					content: `-# Report denied | **Reason:** ${reason ?? "*(no reason given)*"}`
+				}
 
 				try {
 					await msg.edit({
-						embeds: [embed],
-						components: []
+						components: [
+							...comps,
+							footer
+						]
 					});
 
-					await u2.send({embeds: [{
-						title: 'Report denied.',
-						description: [
-							`Server: ${ctx.guild.name} (${ctx.guild.id})`,
-							`Report: ${submission.name}`
-						].join("\n"),
-						fields: [{name: 'Reason', value: reason ?? "*(no reason given)*"}],
-						color: 0xaa5555,
-						timestamp: new Date().toISOString()
-					}]})
-
 					await post.delete();
-					await submission.delete();
+					await report.delete();
 				} catch(e) {
 					console.log(e);
-					return await msg.channel.send('Error: Report denied, but I couldn\'t message the user.');
+					return await msg.channel.send({
+						content: `Error: Unable to complete report process.\nReason:\n\`\`\`\n${e.message}\`\`\``,
+						flags: [MessageFlags.Ephemeral]
+					});
 				}
 
-				return await ctx.followUp({content: 'Report denied.', ephemeral: true});
+				try {
+					await u2.send({
+						components: [{
+							type: 17,
+							accent_color: 0xaa5555,
+							components: [{
+								type: 10,
+								content: (
+									`# Report Denied\n` +
+									`**Server:** ${ctx.guild.name} (${ctx.guild.id})\n` +
+									`**Report:** ${report.name} (${report.hid})\n\n` +
+									`### Reason\n` +
+									reason ?? "*(no reason given)*" +
+									`\n\n-# Denied ${formatTime()}`
+								)
+							}]
+						}],
+						flags: [MessageFlags.IsComponentsV2]
+					})
+				} catch(e) {
+					console.log(e);
+					return await msg.channel.send({
+						content: `Error: Unable to message the user who submitted the report.\nReason:\n\`\`\`\n${e.message}\`\`\``,
+						flags: [MessageFlags.Ephemeral]
+					});
+				}
+
+				return await ctx.followUp({content: 'Report denied.', flags: [MessageFlags.Ephemeral]});
 				break;
 		}
 	}
+
+	// TODO: add handling for report acceptance
 
 	async acceptUserReport(report) {
 		
