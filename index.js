@@ -1,18 +1,18 @@
-require('dotenv').config();
+import 'dotenv/config';
 
-const {
-	Client,
-	GatewayIntentBits: Intents,
+import {
+	GatewayIntentBits as Intents,
 	Partials,
 	Options
-} = require("discord.js");
-const {
+} from "discord.js";
+import {
 	FrameClient,
 	Utilities,
 	Handlers
-} = require('frame');
-const fs = require("fs");
-const path = require("path");
+} from 'frame';
+import fs from "fs";
+
+const __dirname = import.meta.dirname;
 
 const bot = new FrameClient({
 	intents: [
@@ -46,27 +46,27 @@ async function setup() {
 	var { db, stores } = await Handlers.DatabaseHandler(bot, __dirname + '/stores');
 	bot.db = db;
 	bot.stores = stores;
-
-	files = fs.readdirSync(__dirname + "/events");
-	files.forEach(f => bot.on(f.slice(0,-3), (...args) => require(__dirname + "/events/"+f)(...args,bot)));
+	let files;
 
 	bot.handlers = {};
 	bot.handlers.interaction = Handlers.InteractionHandler(bot, __dirname + '/commands');
-	files = fs.readdirSync(__dirname + "/handlers");
+	
+	files = fs.readdirSync("./handlers");
+	console.log(files);
 	for(var f of files) {
 		var n = f.slice(0, -3);
-		bot.handlers[n] = require(__dirname + "/handlers/"+f)(bot)
+		bot.handlers[n] = (await import("./handlers/"+f)).default(bot)
 	}
 
 	bot.utils = Utilities;
-	bot.utils = Object.assign(bot.utils, require('./utils'));
+	bot.utils = Object.assign(bot.utils, await import('./utils.js'));
 }
 
-bot.on("ready", async ()=> {
+bot.on("ready", async () => {
 	console.log(`Logged in as ${bot.user.tag} (${bot.user.id})`);
 })
 
-bot.on('error', (err)=> {
+bot.on('error', (err) => {
 	console.log(`Error:\n${err.stack}`);
 })
 

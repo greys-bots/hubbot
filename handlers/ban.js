@@ -1,10 +1,10 @@
-const {
-	ComponentType: CT,
-	TextInputStyle: TIS,
-	InteractionType: IT
-} = require('discord.js');
+import {
+	ComponentType as CT,
+	TextInputStyle as TIS,
+	InteractionType as IT
+} from 'discord.js';
 
-const { buttons: BTNS } = require('../extras')
+import { buttons as BTNS } from '../extras.js';
 
 const MODALS = {
 	reason: (value) => ({
@@ -69,7 +69,7 @@ const BUTTONS = {
 	}
 }
 
-class BanHandler {
+export class BanHandler {
 	menus = new Map();
 
 	constructor(bot) {
@@ -176,4 +176,4 @@ class BanHandler {
 	}
 }
 
-module.exports = (bot) => new BanHandler(bot);
+export default (bot) => new BanHandler(bot);

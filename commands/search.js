@@ -1,5 +1,6 @@
-const { Models: { SlashCommand } } = require('frame');
-const { ApplicationCommandOptionType: ACOT, ChannelType: CT } = require('discord.js');
+import frame from 'frame';
+const { Models: { SlashCommand } } = frame;
+import { ApplicationCommandOptionType as ACOT, ChannelType as CT } from 'discord.js';
 
 class Command extends SlashCommand {
 	#bot;
@@ -39,7 +40,8 @@ class Command extends SlashCommand {
 
 			],
 			guildOnly: true,
-			ephemeral: true
+			ephemeral: true,
+			v2: true
 		})
 		this.#bot = bot;
 		this.#stores = stores;
@@ -67,8 +69,14 @@ class Command extends SlashCommand {
 
 		var res = await this.#stores.submissions.search(ctx.guild.id, query, tag, cat);
 		if(res?.length) {
-			for(var s of res) await s.getTags();
-			return res.map(x => x.genPost().embeds[0]);
+			let embeds = [];
+			for(var s of res) {
+				await s.getTags();
+				let post = await s.genPost();
+				console.log(post);
+				embeds.push({ components: post });
+			}
+			return embeds;
 		}
 		else return "No matching submissions were found.";
 	}
@@ -113,4 +121,4 @@ class Command extends SlashCommand {
 	}
 }
 
-module.exports = (bot, stores) => new Command(bot, stores);
+export default (bot, stores) => new Command(bot, stores);

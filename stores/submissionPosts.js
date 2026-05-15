@@ -1,4 +1,5 @@
-const { Models: { DataStore, DataObject } } = require('frame');
+import frame from 'frame';
+const { Models: { DataStore, DataObject } } = frame;
 
 const KEYS = {
 	id: { },
@@ -8,13 +9,13 @@ const KEYS = {
 	submission: { }
 }
 
-class SubmissionPost extends DataObject {	
+export class SubmissionPost extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
 }
 
-class SubmissionPostStore extends DataStore {
+export class SubmissionPostStore extends DataStore {
 	constructor(bot, db) {
 		super(bot, db)
 	}
@@ -115,4 +116,4 @@ class SubmissionPostStore extends DataStore {
 	}
 }
 
-module.exports = (bot, db) => new SubmissionPostStore(bot, db);
+export default (bot, db) => new SubmissionPostStore(bot, db);

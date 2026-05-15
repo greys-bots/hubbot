@@ -1,4 +1,5 @@
-const { Models: { DataStore, DataObject } } = require('frame');
+import frame from 'frame';
+const { Models: { DataStore, DataObject } } = frame;
 
 const KEYS = {
 	id: { },
@@ -9,7 +10,7 @@ const KEYS = {
 	channel: { patch: true }
 }
 
-class Category extends DataObject {	
+export class Category extends DataObject {
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
@@ -27,7 +28,7 @@ class Category extends DataObject {
 	}
 }
 
-class CategoryStore extends DataStore {
+export class CategoryStore extends DataStore {
 	constructor(bot, db) {
 		super(bot, db)
 	}
@@ -195,4 +196,4 @@ class CategoryStore extends DataStore {
 	}
 }
 
-module.exports = (bot, db) => new CategoryStore(bot, db);
+export default (bot, db) => new CategoryStore(bot, db);

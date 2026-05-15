@@ -1,4 +1,5 @@
-const { Models: { DataStore, DataObject } } = require('frame');
+import frame from 'frame';
+const { Models: { DataStore, DataObject } } = frame;
 
 const KEYS = {
 	id: { },
@@ -13,13 +14,13 @@ const KEYS = {
 	reports: { patch: true }
 }
 
-class Config extends DataObject {	
+export class Config extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
 }
 
-class ConfigStore extends DataStore {
+export class ConfigStore extends DataStore {
 	constructor(bot, db) {
 		super(bot, db)
 	}
@@ -112,4 +113,4 @@ class ConfigStore extends DataStore {
 	}
 }
 
-module.exports = (bot, db) => new ConfigStore(bot, db);
+export default (bot, db) => new ConfigStore(bot, db);

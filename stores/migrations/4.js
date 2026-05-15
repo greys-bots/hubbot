@@ -1,6 +1,6 @@
 // adds log channels to configs
 
-module.exports = async (bot, db) => {
+export default async (bot, db) => {
 	var columns = await db.query(`
 		select column_name from information_schema.columns
 		where table_name = 'configs'`);

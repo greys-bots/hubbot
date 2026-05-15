@@ -1,10 +1,10 @@
-const {
-	ComponentType: CT,
-	TextInputStyle: TIS,
-	InteractionType: IT
-} = require('discord.js');
+import {
+	ComponentType as CT,
+	TextInputStyle as TIS,
+	InteractionType as IT
+} from 'discord.js';
 
-const { buttons: BTNS } = require('../extras')
+import { buttons as BTNS } from '../extras.js';
 
 const MODALS = {
 	report(ctx, data = { type: '', object_id: '', name: '' }) {
@@ -234,7 +234,7 @@ const BUTTONS = {
 	}
 }
 
-class ReportHandler {
+export class ReportHandler {
 	menus = new Map();
 
 	constructor(bot) {
@@ -467,4 +467,4 @@ class ReportHandler {
 	}
 }
 
-module.exports = (bot) => new ReportHandler(bot);
+export default (bot) => new ReportHandler(bot);

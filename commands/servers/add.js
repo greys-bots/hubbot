@@ -1,4 +1,5 @@
-const { Models: { SlashCommand } } = require('frame');
+import frame from 'frame';
+const { Models: { SlashCommand } } = frame;
 
 class Command extends SlashCommand {
 	#bot;
@@ -27,4 +28,4 @@ class Command extends SlashCommand {
 	}
 }
 
-module.exports = (bot, stores) => new Command(bot, stores);
+export default (bot, stores) => new Command(bot, stores);

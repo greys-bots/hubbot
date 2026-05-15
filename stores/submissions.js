@@ -1,4 +1,5 @@
-const { Models: { DataStore, DataObject } } = require('frame');
+import frame from 'frame';
+const { Models: { DataStore, DataObject } } = frame;
 
 const KEYS = {
 	id: { },
@@ -18,7 +19,7 @@ const KEYS = {
 	status: { patch: true }
 }
 
-class Submission extends DataObject {	
+export class Submission extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
 		this.resolved = {};
@@ -162,7 +163,7 @@ class Submission extends DataObject {
 	}
 }
 
-class SubmissionStore extends DataStore {
+export class SubmissionStore extends DataStore {
 	constructor(bot, db) {
 		super(bot, db)
 	}
@@ -350,4 +351,4 @@ class SubmissionStore extends DataStore {
 	}
 }
 
-module.exports = (bot, db) => new SubmissionStore(bot, db);
+export default (bot, db) => new SubmissionStore(bot, db);

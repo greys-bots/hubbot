@@ -1,4 +1,5 @@
-const { Models: { DataStore, DataObject } } = require('frame');
+import frame from 'frame';
+const { Models: { DataStore, DataObject } } = frame;
 
 const KEYS = {
 	id: { },
@@ -9,13 +10,13 @@ const KEYS = {
 	changes: { patch: true }
 }
 
-class EditRequest extends DataObject {	
+export class EditRequest extends DataObject {	
 	constructor(store, keys, data) {
 		super(store, keys, data);
 	}
 }
 
-class EditStore extends DataStore {
+export class EditStore extends DataStore {
 	constructor(bot, db) {
 		super(bot, db)
 	}
@@ -125,4 +126,4 @@ class EditStore extends DataStore {
 	}
 }
 
-module.exports = (bot, db) => new EditStore(bot, db);
+export default (bot, db) => new EditStore(bot, db);

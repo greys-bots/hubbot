@@ -1,11 +1,12 @@
 {
-  "name": "kh",
+  "name": "hubbot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "node index"
   },
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
