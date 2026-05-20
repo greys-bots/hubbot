@@ -105,13 +105,13 @@ const MODALS = {
 			]
 		}
 	},
-	deny: (value) => ({
-		title: "Deny reason",
-		custom_id: 'deny_reason',
+	reason: (value) => ({
+		title: "Reason",
+		custom_id: 'mod-reason',
 		components: [{
 			type: CT.Label,
-			label: "Deny Reason",
-			description: "Enter the deny reason below",
+			label: "Reason",
+			description: "Enter the reason below",
 			component: {
 				type: 4,
 				custom_id: 'reason',
@@ -119,11 +119,28 @@ const MODALS = {
 				min_length: 1,
 				max_length: 1024,
 				required: true,
-				placeholder: "Big meanie :(",
 				value
 			}
 		}]
-	})
+	}),
+	editUsers: (value) => ({
+		title: "Edit Users",
+		custom_id: 'edit-users',
+		components: [{
+			type: CT.Label,
+			label: "User IDs",
+			description: "Enter the user IDs to ban below.",
+			component: {
+				type: 4,
+				custom_id: 'user-ids',
+				style: 2,
+				min_length: 1,
+				max_length: 1024,
+				required: true,
+				value
+			}
+		}]
+	}),
 }
 
 const POSTS = { }
@@ -193,7 +210,7 @@ const BUTTONS = {
 					type: 2,
 					style: 3,
 					custom_id: `accept`,
-					label: "Ban user",
+					label: "Ban user(s)",
 					emoji: '✅'
 				},
 				{
@@ -386,13 +403,71 @@ export class ReportHandler {
 
 		var report = await this.stores.reports.get(ctx.guild.id, post.report);
 		if(!report?.id) return await ctx.update({content: 'Report deleted, post no longer needed.', embeds: [], components: []});
+
+		let config = await this.stores.configs.get(ctx.guild.id);
 		
 		let comps = msg.components.map(c => c.toJSON());
 		comps.pop();
 		var embed = comps[0];
 		switch(ctx.customId) {
 			case 'accept':
-				return await ctx.followUp('Button acknowledged')
+				try {
+					var u2 = await this.bot.users.fetch(report.reporter);
+				} catch(e) { }
+
+				var reason;
+				var m = await msg.channel.send({
+					embeds: [{
+						title: 'Click below to enter the ban reason.'
+					}],
+					components: [{
+						type: 1,
+						components: [
+							{
+								type: 2,
+								label: 'Add reason',
+								custom_id: 'reason',
+								style: 1,
+								emoji: '📝'							}
+						]
+					}]
+				});
+
+				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60 * 1000, false);
+				if(!resp.choice) return await ctx.followUp({content: 'Nothing selected, cancelling action.', flags: [MessageFlags.Ephemeral]});
+				var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.reason(reason), ctx.user, true, 5 * 60_000);
+				if(mod) reason = mod.fields.getTextInputValue('reason')?.trim();
+				var md = await mod.followUp({ components: [{
+					type: 17,
+					accent_color: 0x55aaaa,
+					components: [
+						{
+							type: 10,
+							content: '## Reason'
+						},
+						{
+							type: 10,
+							content: reason ?? '(no reason received)'
+						}
+					]
+				}], flags: [MessageFlags.Ephemeral, MessageFlags.IsComponentsV2]});
+				
+				await m.delete();
+
+				let response;
+				switch(report.type) {
+					case 'user':
+						response = await this.acceptUserReport(report, ctx, { reason, banlogsId: config.ban_logs, modlogsId: config.mod_logs });
+						break;
+					case 'listed':
+						response = await this.acceptListedServerReport(report, ctx);
+						break;
+					case 'unlisted':
+						response = await this.acceptUnlistedServerReport(report, ctx);
+						break;
+				}
+
+
 				break;
 			case 'deny':
 				try {
@@ -407,14 +482,14 @@ export class ReportHandler {
 					components: BTNS.DENY(false)
 				});
 
-				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60 * 1000, false);
+				var resp = await this.bot.utils.getChoice(this.bot, m, ctx.user, 2 * 60_000, false);
 				if(!resp.choice) return await ctx.followUp({content: 'Nothing selected.', flags: [MessageFlags.Ephemeral]});
 				switch(resp.choice) {
 					case 'cancel':
 						await m.delete()
 						return resp.interaction.reply({content: 'Action cancelled.', flags: [MessageFlags.Ephemeral]});
 					case 'reason':
-						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.deny(reason), ctx.user, false, 5 * 60_000);
+						var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.reason(reason), ctx.user, false, 5 * 60_000);
 						if(mod) reason = mod.fields.getTextInputValue('reason')?.trim();
 						var md = await mod.followUp("Modal received.");
 						await md.delete()
@@ -423,7 +498,7 @@ export class ReportHandler {
 						break;
 				}
 
-				await m.delete()
+				await m.delete();
 
 				embed.accent_color = 0xaa5555;
 				comps[0] = embed;
@@ -484,8 +559,67 @@ export class ReportHandler {
 
 	// TODO: add handling for report acceptance
 
-	async acceptUserReport(report) {
-		
+	async acceptUserReport(report, ctx, data) {
+		let { reason, banlogsId, modlogsId } = data;
+		let msg = await ctx.followUp({ content: 'Please wait, verifying report IDs...', flags: [MessageFlags.Ephemeral] });
+		let ids = report.object_id.split(/\s+/);
+		console.log(ids);
+
+		let verified = [];
+		for(var id of ids) {
+			try {
+				let member = await this.bot.users.fetch(id);
+				verified.push(member);
+			} catch(e) { }
+		}
+
+		if(!verified.length) return await ctx.followUp({
+			content: "No users were able to be verified. This likely means that the IDs supplied are incorrect.",
+			flags: [MessageFlags.Ephemeral]
+		})
+
+		report.object_id = verified.map(x => x.id).join("\n");
+		report.save();
+
+		msg = await ctx.followUp({
+			components: [
+				{
+					type: 17,
+					components: [
+						{
+							type: 10,
+							content: '## Confirmation\nPlease confirm the users to ban below.'
+						},
+						{
+							type: 10,
+							content: verified.map(x => `${x} (${x.username} / ${x.id})`).join("\n")
+						}
+					]
+				},
+				...BTNS.ACCEPT_USER()
+			],
+			flags: [MessageFlags.Ephemeral, MessageFlags.IsComponentsV2]
+		});
+
+		let resp = await this.bot.utils.getChoice(this.bot, msg, ctx.user, 2 * 60_000, false);
+		if(!resp.choice) return await ctx.followUp({content: 'Nothing selected, cancelling action.', flags: [MessageFlags.Ephemeral]});
+		switch(resp.choice) {
+			case 'cancel':
+				return resp.interaction.reply({content: 'Action cancelled.', flags: [MessageFlags.Ephemeral]});
+			case 'edit':
+				var mod = await this.bot.utils.awaitModal(resp.interaction, MODALS.editUsers(verified.map(x => x.id).join("\n")), ctx.user, false, 10 * 60_000);
+				if(mod) ids = mod.fields.getTextInputValue('user-ids')?.trim().split(/\s+/);
+				var md = await mod.followUp({ content: "Modal received.", flags: [MessageFlags.Ephemeral]});
+				await md.delete()
+
+				report.object_id = ids.join("\n");
+				await report.save();
+				return await this.acceptUserReport(report, ctx, reason);
+				break;
+			case 'confirm':
+				return await this.bot.handlers.ban.ban(ctx, { reason, users: verified });
+				break;
+		}
 	}
 
 	async acceptListedServerReport() {

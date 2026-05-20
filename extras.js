@@ -67,7 +67,36 @@ export const buttons = {
 				emoji: '❌'
 			}
 		]
-	}]
+	}],
+	ACCEPT_USER: (disabled) => ([{
+		type: 1,
+		components: [
+			{
+				type: 2,
+				label: 'Confirm and Ban',
+				custom_id: 'confirm',
+				style: 1,
+				emoji: '✅',
+				disabled
+			},
+			{
+				type: 2,
+				label: 'Edit IDs',
+				custom_id: 'edit',
+				style: 2,
+				emoji: '📝',
+				disabled
+			},
+			{
+				type: 2,
+				label: 'Cancel',
+				custom_id: 'cancel',
+				style: 4,
+				emoji: '❌',
+				disabled
+			},
+		]
+	}])
 }
 
 export default {

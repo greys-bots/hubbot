@@ -1,7 +1,8 @@
 import {
 	ComponentType as CT,
 	TextInputStyle as TIS,
-	InteractionType as IT
+	InteractionType as IT,
+	MessageFlags,
 } from 'discord.js';
 
 import { buttons as BTNS } from '../extras.js';
@@ -28,28 +29,30 @@ const MODALS = {
 }
 
 const POSTS = {
-	log: (data) => {
-		return {
-			title: "User(s) Banned",
-			fields: [
+	log: (data) => ([
+						{
+			type: 17,
+			accent_color: 0xaa5555,
+			components: [
 				{
-					name: `Name${data.users.length > 1 ? 's' : ''}`,
-					value: data.users.map(x => x.name).join("\n")
+					type: 10,
+					content: '# Ban Log'
 				},
 				{
-					name: `ID${data.users.length > 1 ? 's' : ''}`,
-					value: data.users.map(x => x.id).join("\n")
+					type: 10,
+					content: `## Users Banned\n${data.users.map(x => `${x} (${x.username} / ${x.id})`).join('\n')}`
 				},
 				{
-					name: 'Reason',
-					value: data.reason
+					type: 10,
+					content: `## Reason\n${data.reason}`
 				}
-			],
-			footer: {
-				text: `Log ID: ${data.hid}`
-			}
+			]
+		},
+		{
+			type: 10,
+			content: `-# ID: \`${data.hid}\` | Timestamp: ${data.timestamp}`
 		}
-	}
+	])
 }
 
 const BUTTONS = {
@@ -84,78 +87,132 @@ export class BanHandler {
 	}
 
 	async ban(ctx, data = {
-		users
+		//users, reason
 	}) {
 		var cfg = await this.stores.configs.get(ctx.guild.id);
+		let banLogs, modLogs;
 
-		var m = await this.bot.utils.awaitModal(
-			ctx,
-			MODALS.reason(ctx),
-			ctx.user,
-			false,
-			5 * 60_000
-		)
-		if(!m) return "No data given.";
-		var reason = m.fields.getField('reason').value.trim();
+		try {
+			banLogs = await ctx.guild.channels.fetch(cfg.ban_logs);
+		} catch(e) {
+			console.error(`Couldn't fetch banlogs channel: \`${e.message ?? e}\``)
+			banLogs = ctx.channel;
+		}
 
-		var md = await m.fetchReply();
-		await md.delete();
+		try {
+			modLogs = await ctx.guild.channels.fetch(cfg.mod_logs);
+		} catch(e) {
+			console.error(`Couldn't fetch modlogs channel: \`${e.message ?? e}\``)
+			modLogs = ctx.channel;
+		}
 
-		var users = [];
-		var errs = [];
+		console.log(banLogs, modLogs);
+
+		let reason = data.reason;
+		if(!reason?.length) {
+			var m = await this.bot.utils.awaitModal(
+				ctx,
+				MODALS.reason(ctx),
+				ctx.user,
+				false,
+				5 * 60_000
+			)
+			if(!m) return "No data given.";
+			reason = m.fields.getField('reason').value.trim();
+
+			var md = await m.fetchReply();
+			await md.delete();
+		}
+		
+		let ids = [];
+		let users = [];
 		for(var u of data.users) {
-			try {
-				if(typeof u == string) {
-					u = await this.bot.users.fetch(u);
-				}
-
-				await u.ban(reason.slice(0, 256));
-				users.push({ name: u.tag, id: u.id });
-			} catch(e) {
-				console.log(e.message ?? e);
-				errs.push(u.id ?? u);
-				continue;
+			if(typeof u == 'string') {
+				let user = await this.bot.users.fetch(u);
+				ids.push(u);
+				users.push(user)
+			} else {
+				users.push(u);
+				ids.push(u.id)
 			}
 		}
 
+		let result;
+		try {
+			result = await ctx.guild.members.bulkBan(ids, { reason });
+		} catch(e) {
+			console.error(e)
+		}
+
+		if(!result?.bannedUsers?.length) return { success: false, successful: [], failed: result?.failedUsers ?? ids };
+
+		let banned = users.filter(x => result.bannedUsers.includes(x.id));
+
 		var sub = await this.stores.bans.create({
 			host: ctx.guild.id,
-			user_ids: users.map(x => x.id),
+			user_ids: ids,
 			reason
 		})
-
-		var channel;
-		try {
-			channel = await ctx.guild.channels.fetch(cfg?.ban_channel);
-		} catch(e) {
-			console.log(e.message ?? e);
-			channel = ctx.channel
-		}
 		
-		var msg = await channel.send({
-			...this.genPost({
-				...sub,
-				users,
-				timestamp: new Date()
-			}, "log"),
-			components: BUTTONS.post()
+		var msg = await banLogs.send({
+			flags: [MessageFlags.IsComponentsV2],
+			components: [
+				...this.genPost({
+					...sub,
+					users,
+					timestamp: this.bot.utils.formatTime()
+				}, "log"),
+				...BUTTONS.post()
+			]
 		});
 
 		var post = await this.stores.banPosts.create({
 			server_id: ctx.guild.id,
-			channel_id: channel.id,
+			channel_id: banLogs.id,
 			message_id: msg.id,
 			log: sub.hid
 		})
 
+		await modLogs.send({
+			flags: [MessageFlags.IsComponentsV2],
+			components: [
+				{
+					type: 17,
+					accent_color: 0xaaffff,
+					components: [
+						{
+							type: 10,
+							content: '# Ban Executed'
+						},
+						{
+							type: 10,
+							content: [
+								'## Moderator',
+								`${ctx.user} (${ctx.user.username} / ${ctx.user.id})`,
+								'## Banned Users',
+								'```',
+								ids.join(" "),
+								"```"
+							].join("\n")
+						}
+					]
+				},
+				{
+					type: 10,
+					content: `-# Timestamp: ${this.bot.utils.formatTime()}`
+				}
+			]
+		})
+
 		return {
-			content: "Users have been banned.",
-			ephemeral: true
+			success: true,
+			successful: result.bannedUsers,
+			failed: result.failedUsers
 		};
 	}
 
 	genPost(data, type) {
-		return {embeds: [POSTS[type](data)]};
+		return POSTS[type](data);
 	}
 
 	async handleButtons(ctx) {
