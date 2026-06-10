@@ -76,12 +76,12 @@ module.exports = {
 			}
 
 			succ.push({id:membs[i], pass:true, info:u});
-			if(uns[uns.length - 1].value.length + `\n${u.username}#${u.discriminator}`.length > 1024) {
+			if(uns[uns.length - 1].value.length + `\n${u.username}`.length > 1024) {
 				uns.push({
 					name: '**__Last Known Usernames__** (cont)',
 					value: `${u.username}#${u.discriminator}`
 				})
-			} else uns[uns.length - 1].value += `\n${u.username}#${u.discriminator}`;
+			} else uns[uns.length - 1].value += `\n${u.username}`;
 
 			if(idfs[idfs.length - 1].value.length + `\n${u.id}`.length > 1024) {
 				idfs.push({
@@ -92,7 +92,7 @@ module.exports = {
 		}
 
 		var message;
-		var channel;
+		var channel, banids, repnotifs;
 		var code = bot.utils.genCode(bot.chars);
 		var date = new Date();
 
@@ -110,6 +110,10 @@ module.exports = {
 		if(conf && conf.banlog_channel && msg.guild.channels.find(ch => ch.id == conf.banlog_channel))
 			var channel = msg.guild.channels.find(ch => ch.id == conf.banlog_channel);
 		else channel = msg.channel;
+		if(msg.guild.id == process.env.HUB_ID) {
+			banids = msg.guild.channels.find(ch => ch.id == process.env.BAN_IDS);
+			repnotifs = msg.guild.channels.find(ch => ch.id == process.env.REP_NOTIFS);
+		}
 
 		var fields = uns.concat(idfs);
 		fields.push({
@@ -131,11 +135,27 @@ module.exports = {
 				title: "Results",
 				fields: [
 				{
-					name: "Not Banned", value: (succ.filter(m => !m.pass).length > 0 ? succ.filter(x => !x.pass).map(m => m.id + " - " + m.reason).join("\n") : "None")
+					name: "Not Banned",
+					value: (
+						succ.filter(m => !m.pass).length > 0 ?
+						succ.filter(x => !x.pass).map(m => m.id + " - " + m.reason).join("\n")
+						: "None"
+					)
 				}
 				]
 			}});
 		}
+
+		if(banids) {
+			await banids.createMessage(
+				`**IDs for ban log ${code}**\n` +
+				banned.join('\n')
+			)
+		}
+		if(repnotifs && conf.reprole) {
+			await repnotifs.createMessage(`<@&${conf.reprole}> New ban posted!`);
+		}
+
 
 		try {
 			await bot.stores.banLogs.create(msg.guild.id, code, {channel_id: message.channel.id, message_id: message.id, users: banned, reason, timestamp: date});
