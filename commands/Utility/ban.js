@@ -152,8 +152,8 @@ module.exports = {
 				banned.join('\n')
 			)
 		}
-		if(repnotifs && conf.reprole) {
-			await repnotifs.createMessage(`<@&${conf.reprole}> New ban posted!`);
+		if(repnotifs) {
+			await repnotifs.createMessage(`<@&${process.env.BAN_ROLE}> New ban posted!`);
 		}
 
 
